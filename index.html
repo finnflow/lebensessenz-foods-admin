@@ -140,6 +140,8 @@
     <input type="search" id="search" placeholder="Suche nach Name…" />
     <select id="fCat"><option value="">Alle Kategorien</option></select>
     <select id="fHay"><option value="">Alle Hay-Gruppen</option></select>
+    <select id="fAllergen"><option value="">Alle Allergene</option></select>
+    <select id="fIntol"><option value="">Alle Unverträglichkeiten</option></select>
     <select id="fStatus">
       <option value="">Alle</option>
       <option value="draft">Nur neue (Entwurf)</option>
@@ -233,6 +235,8 @@ async function showApp(session){
   $("#whoami").textContent = session.user.email;
   CATEGORIES.forEach(c=>$("#fCat").appendChild(new Option(c,c)));
   HAY.forEach(h=>$("#fHay").appendChild(new Option(h,h)));
+  ALLERGENS.forEach(a=>$("#fAllergen").appendChild(new Option(a,a)));
+  INTOL.forEach(i=>$("#fIntol").appendChild(new Option(i,i)));
   await loadFoods();
 }
 $("#loginBtn").onclick = async ()=>{
@@ -263,11 +267,13 @@ function sortKey(f){
 }
 function render(){
   const q=$("#search").value.trim().toLowerCase(), cat=$("#fCat").value, hay=$("#fHay").value,
+        al=$("#fAllergen").value, intol=$("#fIntol").value,
         st=$("#fStatus").value, unrev=$("#fUnreviewed").checked;
   let list = FOODS.filter(f=>
     (!q || f.name.toLowerCase().includes(q)) && (!cat || f.category===cat) &&
-    (!hay || (f.hay_groups||[]).includes(hay)) && (!st || f.status===st) &&
-    (!unrev || !f.reviewed_by_ricarda));
+    (!hay || (f.hay_groups||[]).includes(hay)) &&
+    (!al || (f.allergens||[]).includes(al)) && (!intol || (f.intolerances||[]).includes(intol)) &&
+    (!st || f.status===st) && (!unrev || !f.reviewed_by_ricarda));
   list.sort((a,b)=>{
     const ka=sortKey(a),kb=sortKey(b); let c = ka<kb?-1:ka>kb?1:0;
     if(c===0) c=a.name.localeCompare(b.name);
@@ -302,7 +308,7 @@ function render(){
     th.querySelector(".arr").textContent = th.dataset.sort===sortField ? (sortDir==="asc"?" ▲":" ▼") : "";
   });
 }
-["#search","#fCat","#fHay","#fStatus","#fUnreviewed"].forEach(s=>$(s).addEventListener("input",render));
+["#search","#fCat","#fHay","#fAllergen","#fIntol","#fStatus","#fUnreviewed"].forEach(s=>$(s).addEventListener("input",render));
 
 // ── Auswahl / Löschen ──
 function toggleRow(e,idx){
