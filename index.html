@@ -34,6 +34,16 @@
   .controls input[type=search]{flex:1;min-width:200px;padding:10px 13px;border:1px solid var(--line);border-radius:10px;background:#fff}
   .controls select{padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}
   .controls label{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:13px}
+  /* Mehrfach-Auswahl-Filter */
+  .msel{position:relative;display:inline-block}
+  .msel-btn{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-weight:500}
+  .msel-btn.active{border-color:var(--accent);background:#f7efe2;font-weight:600}
+  .msel-pop{display:none;position:absolute;z-index:35;top:calc(100% + 4px);left:0;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:8px;min-width:210px;max-height:300px;overflow:auto}
+  .msel-pop.open{display:block}
+  .msel-pop label{display:flex;gap:8px;align-items:center;padding:5px 6px;border-radius:7px;font-size:13.5px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+  .msel-pop label:hover{background:#f4efe7}
+  .msel-foot{border-top:1px solid var(--line);margin-top:6px;padding-top:6px;text-align:right}
+  .msel-clear{background:none;border:0;color:var(--muted);font-size:12.5px;cursor:pointer}
   .btn{padding:9px 13px;border:1px solid var(--line);border-radius:10px;background:#fff;font-weight:600}
   .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
   .btn.ghost{background:transparent}
@@ -138,16 +148,11 @@
 
   <div class="controls">
     <input type="search" id="search" placeholder="Suche nach Name…" />
-    <select id="fCat"><option value="">Alle Kategorien</option></select>
-    <select id="fHay"><option value="">Alle Hay-Gruppen</option></select>
-    <select id="fAllergen"><option value="">Alle Allergene</option></select>
-    <select id="fIntol"><option value="">Alle Unverträglichkeiten</option></select>
-    <select id="fAmpel">
-      <option value="">Alle Ampeln</option>
-      <option value="GRUEN">🟢 Grün</option>
-      <option value="GELB">🟡 Gelb</option>
-      <option value="ROT">🔴 Rot</option>
-    </select>
+    <div class="msel" data-key="category"></div>
+    <div class="msel" data-key="hay"></div>
+    <div class="msel" data-key="allergens"></div>
+    <div class="msel" data-key="intol"></div>
+    <div class="msel" data-key="ampel"></div>
     <select id="fStatus">
       <option value="">Alle</option>
       <option value="draft">Nur neue (Entwurf)</option>
@@ -226,6 +231,46 @@ const FIELD_META = {
 };
 const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances";
 
+// ── Mehrfach-Auswahl-Filter ──
+// mode "or"  = Lebensmittel hat EINEN der gewählten Werte (Kategorie, Ampel — Einzelwert)
+// mode "and" = Lebensmittel hat ALLE gewählten Werte (Hay/Allergene/Unverträglichkeiten — Mehrwert)
+const FILTERS = [
+  {key:"category",  label:"Kategorie",           opts:CATEGORIES, mode:"or",  field:f=>f.category?[f.category]:[]},
+  {key:"hay",       label:"Hay-Gruppe",          opts:HAY,        mode:"and", field:f=>f.hay_groups||[]},
+  {key:"allergens", label:"Allergene",           opts:ALLERGENS,  mode:"and", field:f=>f.allergens||[]},
+  {key:"intol",     label:"Unverträglichkeiten", opts:INTOL,      mode:"and", field:f=>f.intolerances||[]},
+  {key:"ampel",     label:"Ampel",  opts:["GRUEN","GELB","ROT"],  mode:"or",
+   labels:{GRUEN:"🟢 Grün",GELB:"🟡 Gelb",ROT:"🔴 Rot"}, field:f=>f.ampel?[f.ampel]:[]},
+];
+const SEL = {category:new Set(),hay:new Set(),allergens:new Set(),intol:new Set(),ampel:new Set()};
+
+function buildFilters(){
+  for(const flt of FILTERS){
+    const host=document.querySelector(`.msel[data-key="${flt.key}"]`);
+    host.innerHTML = `<button type="button" class="msel-btn"></button><div class="msel-pop">`+
+      flt.opts.map(o=>{const v=o, lab=(flt.labels&&flt.labels[v])||v;
+        return `<label><input type="checkbox" value="${esc(v)}">${esc(lab)}</label>`;}).join("")+
+      `<div class="msel-foot"><button type="button" class="msel-clear">zurücksetzen</button></div></div>`;
+    const btn=host.querySelector(".msel-btn"), popp=host.querySelector(".msel-pop");
+    updateMselBtn(flt,btn);
+    btn.onclick=e=>{ e.stopPropagation();
+      document.querySelectorAll(".msel-pop.open").forEach(p=>{if(p!==popp)p.classList.remove("open");});
+      popp.classList.toggle("open"); };
+    popp.onclick=e=>e.stopPropagation();
+    popp.querySelectorAll("input").forEach(cb=>cb.onchange=()=>{
+      cb.checked?SEL[flt.key].add(cb.value):SEL[flt.key].delete(cb.value);
+      updateMselBtn(flt,btn); render(); });
+    host.querySelector(".msel-clear").onclick=()=>{ SEL[flt.key].clear();
+      popp.querySelectorAll("input").forEach(c=>c.checked=false); updateMselBtn(flt,btn); render(); };
+  }
+}
+function updateMselBtn(flt,btn){
+  const n=SEL[flt.key].size;
+  btn.textContent = n ? `${flt.label} (${n}) ▾` : `${flt.label} ▾`;
+  btn.classList.toggle("active", n>0);
+}
+document.addEventListener("click",()=>document.querySelectorAll(".msel-pop.open").forEach(p=>p.classList.remove("open")));
+
 let FOODS=[], current=null, selected=new Set(), lastIdx=null, visibleRows=[], sortField="name", sortDir="asc";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -239,10 +284,7 @@ async function init(){
 async function showApp(session){
   $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
   $("#whoami").textContent = session.user.email;
-  CATEGORIES.forEach(c=>$("#fCat").appendChild(new Option(c,c)));
-  HAY.forEach(h=>$("#fHay").appendChild(new Option(h,h)));
-  ALLERGENS.forEach(a=>$("#fAllergen").appendChild(new Option(a,a)));
-  INTOL.forEach(i=>$("#fIntol").appendChild(new Option(i,i)));
+  buildFilters();
   await loadFoods();
 }
 $("#loginBtn").onclick = async ()=>{
@@ -272,14 +314,20 @@ function sortKey(f){
   }
 }
 function render(){
-  const q=$("#search").value.trim().toLowerCase(), cat=$("#fCat").value, hay=$("#fHay").value,
-        al=$("#fAllergen").value, intol=$("#fIntol").value, amp=$("#fAmpel").value,
-        st=$("#fStatus").value, unrev=$("#fUnreviewed").checked;
-  let list = FOODS.filter(f=>
-    (!q || f.name.toLowerCase().includes(q)) && (!cat || f.category===cat) &&
-    (!hay || (f.hay_groups||[]).includes(hay)) &&
-    (!al || (f.allergens||[]).includes(al)) && (!intol || (f.intolerances||[]).includes(intol)) &&
-    (!amp || f.ampel===amp) && (!st || f.status===st) && (!unrev || !f.reviewed_by_ricarda));
+  const q=$("#search").value.trim().toLowerCase(), st=$("#fStatus").value, unrev=$("#fUnreviewed").checked;
+  let list = FOODS.filter(f=>{
+    if(q && !f.name.toLowerCase().includes(q)) return false;
+    for(const flt of FILTERS){
+      const chosen=SEL[flt.key];
+      if(!chosen.size) continue;
+      const vals=flt.field(f);
+      const ok = flt.mode==="or" ? [...chosen].some(c=>vals.includes(c)) : [...chosen].every(c=>vals.includes(c));
+      if(!ok) return false;
+    }
+    if(st && f.status!==st) return false;
+    if(unrev && f.reviewed_by_ricarda) return false;
+    return true;
+  });
   list.sort((a,b)=>{
     const ka=sortKey(a),kb=sortKey(b); let c = ka<kb?-1:ka>kb?1:0;
     if(c===0) c=a.name.localeCompare(b.name);
@@ -314,7 +362,7 @@ function render(){
     th.querySelector(".arr").textContent = th.dataset.sort===sortField ? (sortDir==="asc"?" ▲":" ▼") : "";
   });
 }
-["#search","#fCat","#fHay","#fAllergen","#fIntol","#fAmpel","#fStatus","#fUnreviewed"].forEach(s=>$(s).addEventListener("input",render));
+["#search","#fStatus","#fUnreviewed"].forEach(s=>$(s).addEventListener("input",render));
 
 // ── Auswahl / Löschen ──
 function toggleRow(e,idx){
