@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lebensessenz · Lebensmittel-Pflege</title>
+<style>
+  :root{
+    --bg:#faf7f2; --card:#fff; --ink:#2c2a26; --muted:#8a8276; --line:#e8e2d8;
+    --accent:#b8893f; --accent-dark:#9a7333;
+    --gruen:#3f9d54; --gelb:#e0a92e; --rot:#cf4b3a;
+    --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       background:var(--bg);color:var(--ink)}
+  button{font:inherit;cursor:pointer}
+  input,select,textarea{font:inherit;color:var(--ink)}
+  .hidden{display:none!important}
+
+  /* Login */
+  #login{min-height:100vh;display:grid;place-items:center;padding:24px}
+  #login .box{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    box-shadow:var(--shadow);padding:32px;width:100%;max-width:380px}
+  #login h1{margin:0 0 4px;font-size:22px}
+  #login p{margin:0 0 20px;color:var(--muted);font-size:14px}
+  #login input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;margin-bottom:12px;background:#fff}
+  #login button{width:100%;padding:12px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:600}
+  #login .err{color:var(--rot);font-size:13px;min-height:18px;margin-top:4px}
+
+  /* App shell */
+  header.bar{position:sticky;top:0;z-index:10;background:rgba(250,247,242,.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);padding:12px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  header.bar .title{font-weight:700;font-size:16px;margin-right:auto;display:flex;gap:8px;align-items:center}
+  header.bar .who{color:var(--muted);font-size:13px}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;padding:14px 20px;align-items:center}
+  .controls input[type=search]{flex:1;min-width:220px;padding:10px 13px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .controls select{padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .controls label{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:13px}
+  .btn{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;font-weight:600}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.ghost{background:transparent}
+  .count{color:var(--muted);font-size:13px;padding:0 20px 8px}
+
+  /* Table */
+  .wrap{padding:0 20px 60px}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:middle}
+  th{background:#f4efe7;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  tr:last-child td{border-bottom:0}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:#fbf8f2}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:middle}
+  .dot.GRUEN{background:var(--gruen)} .dot.GELB{background:var(--gelb)} .dot.ROT{background:var(--rot)}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;background:#f0ece3;color:var(--muted)}
+  .pill.draft{background:#fbe9c8;color:#8a5a16}
+  .tag-check{color:var(--gruen);font-weight:700}
+  .tag-warn{color:#b9912f}
+
+  /* Editor drawer */
+  .scrim{position:fixed;inset:0;background:rgba(20,16,10,.35);opacity:0;pointer-events:none;transition:.2s;z-index:20}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100vh;width:min(520px,100vw);background:var(--card);
+    box-shadow:-8px 0 30px rgba(0,0,0,.12);transform:translateX(100%);transition:.25s;z-index:21;
+    display:flex;flex-direction:column}
+  .drawer.open{transform:none}
+  .drawer header{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .drawer header h2{margin:0;font-size:17px;flex:1}
+  .drawer .body{overflow:auto;padding:18px 20px;flex:1}
+  .drawer footer{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+  .field{margin-bottom:16px}
+  .field>label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+  .field .hint{color:var(--muted);font-weight:400;font-size:12px}
+  .field input[type=text],.field select,.field textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff}
+  .field textarea{min-height:62px;resize:vertical}
+  .ampel-row{display:flex;gap:8px}
+  .ampel-row button{flex:1;padding:9px;border:1px solid var(--line);border-radius:9px;background:#fff;font-weight:600;opacity:.55}
+  .ampel-row button.sel{opacity:1;border-width:2px}
+  .ampel-row button[data-v=GRUEN].sel{border-color:var(--gruen);color:var(--gruen)}
+  .ampel-row button[data-v=GELB].sel{border-color:var(--gelb);color:var(--gelb)}
+  .ampel-row button[data-v=ROT].sel{border-color:var(--rot);color:var(--rot)}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chips label{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);
+    border-radius:999px;font-size:13px;cursor:pointer;background:#fff}
+  .chips label.on{background:#f3ece0;border-color:var(--accent)}
+  .chips input{display:none}
+  .savemsg{color:var(--gruen);font-size:13px;margin-right:auto;align-self:center}
+  .savemsg.err{color:var(--rot)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<section id="login">
+  <div class="box">
+    <h1>🌱 Lebensmittel-Pflege</h1>
+    <p>Lebensessenz · interner Bereich</p>
+    <input id="email" type="email" placeholder="E-Mail" autocomplete="username" />
+    <input id="password" type="password" placeholder="Passwort" autocomplete="current-password" />
+    <button id="loginBtn">Anmelden</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</section>
+
+<!-- APP -->
+<main id="app" class="hidden">
+  <header class="bar">
+    <div class="title">🌱 Lebensmittel-Pflege</div>
+    <span class="who" id="whoami"></span>
+    <button class="btn ghost" id="logoutBtn">Abmelden</button>
+  </header>
+
+  <div class="controls">
+    <input type="search" id="search" placeholder="Suche nach Name…" />
+    <select id="fCat"><option value="">Alle Kategorien</option></select>
+    <select id="fStatus">
+      <option value="">Alle</option>
+      <option value="draft">Nur neue (Entwurf)</option>
+      <option value="published">Nur veröffentlicht</option>
+    </select>
+    <label><input type="checkbox" id="fUnreviewed" /> nur unbestätigte</label>
+    <button class="btn primary" id="newBtn">+ Neues Lebensmittel</button>
+  </div>
+  <div class="count" id="count"></div>
+
+  <div class="wrap">
+    <table>
+      <thead><tr>
+        <th style="width:30px"></th><th>Name</th><th>Kategorie</th>
+        <th>Hay-Gruppe</th><th>Status</th><th>Geprüft</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+</main>
+
+<!-- EDITOR -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <header>
+    <h2 id="drawerTitle">Bearbeiten</h2>
+    <button class="btn ghost" id="closeDrawer">✕</button>
+  </header>
+  <div class="body" id="drawerBody"></div>
+  <footer>
+    <span class="savemsg" id="saveMsg"></span>
+    <button class="btn" id="cancelBtn">Abbrechen</button>
+    <button class="btn primary" id="saveBtn">Speichern</button>
+  </footer>
+</aside>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<script>
+const sb = supabase.createClient(window.LE_CONFIG.url, window.LE_CONFIG.key);
+
+// ── Vokabular (fix; deckt sich mit dem Notion-V3-Modell) ──────────────────
+const CATEGORIES = ["Getreide / Backwaren","Kartoffeln / Reis / Pasta","Milchprodukte",
+  "Fleisch / Wurst","Fisch / Meeresfrüchte","Eier","Gemüse / Salat","Obst",
+  "Hülsenfrüchte / Soja","Nüsse / Samen","Fette / Öle","Saucen / Würzen",
+  "Süßes / Snacks","Getränke","Fertigprodukt / Convenience","Backzutaten"];
+const HAY = ["stärkearmes Gemüse/Salat","Obst","Kohlenhydrat-Quelle","Protein-Quelle","Fett-Quelle"];
+const ALLERGENS = ["Glutenhaltiges Getreide","Weizen","Roggen","Gerste","Hafer","Milch","Laktose",
+  "Ei","Soja","Erdnuss","Schalenfrüchte / Nüsse","Fisch","Krebstiere","Weichtiere","Sellerie",
+  "Senf","Sesam","Sulfite","Lupine"];
+const INTOL = ["Laktoseintoleranz","Zöliakie / Gluten","Glutensensitivität / Weizensensitivität",
+  "Fruktosemalabsorption","Sorbit-Unverträglichkeit","Histaminintoleranz","Soja-Unverträglichkeit","keine typische"];
+const AMPEL = [["GRUEN","🟢 Grün"],["GELB","🟡 Gelb"],["ROT","🔴 Rot"]];
+// Nur diese Felder sieht/ändert Ricarda. Engine-Felder bleiben unangetastet.
+const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances";
+
+let FOODS=[], current=null;
+const $=s=>document.querySelector(s);
+
+// ── Auth ──────────────────────────────────────────────────────────────────
+async function init(){
+  const {data:{session}} = await sb.auth.getSession();
+  if(session) showApp(session); else showLogin();
+}
+function showLogin(){ $("#login").classList.remove("hidden"); $("#app").classList.add("hidden"); }
+async function showApp(session){
+  $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
+  $("#whoami").textContent = session.user.email;
+  CATEGORIES.forEach(c=>{const o=document.createElement("option");o.value=o.textContent=c;$("#fCat").appendChild(o);});
+  await loadFoods();
+}
+$("#loginBtn").onclick = async ()=>{
+  $("#loginErr").textContent="";
+  const {data,error} = await sb.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});
+  if(error){ $("#loginErr").textContent = "Anmeldung fehlgeschlagen."; return; }
+  showApp(data.session);
+};
+$("#password").addEventListener("keydown",e=>{if(e.key==="Enter")$("#loginBtn").click();});
+$("#logoutBtn").onclick = async ()=>{ await sb.auth.signOut(); location.reload(); };
+
+// ── Daten laden + Liste ─────────────────────────────────────────────────────
+async function loadFoods(){
+  const {data,error} = await sb.from("foods").select(EDIT_COLS).order("name");
+  if(error){ alert("Fehler beim Laden: "+error.message); return; }
+  FOODS = data; render();
+}
+function render(){
+  const q=$("#search").value.trim().toLowerCase(), cat=$("#fCat").value,
+        st=$("#fStatus").value, unrev=$("#fUnreviewed").checked;
+  const list = FOODS.filter(f=>
+    (!q || f.name.toLowerCase().includes(q)) &&
+    (!cat || f.category===cat) && (!st || f.status===st) &&
+    (!unrev || !f.reviewed_by_ricarda));
+  $("#count").textContent = `${list.length} von ${FOODS.length} Lebensmitteln`;
+  const tb=$("#rows"); tb.innerHTML="";
+  for(const f of list){
+    const tr=document.createElement("tr"); tr.onclick=()=>openEditor(f);
+    tr.innerHTML = `
+      <td>${f.ampel?`<span class="dot ${f.ampel}"></span>`:""}</td>
+      <td><b>${esc(f.name)}</b></td>
+      <td>${esc(f.category||"—")}</td>
+      <td>${(f.hay_groups||[]).map(esc).join(", ")||"—"}</td>
+      <td>${f.status==="draft"?'<span class="pill draft">Entwurf</span>':'<span class="pill">veröffentlicht</span>'}</td>
+      <td>${f.reviewed_by_ricarda?'<span class="tag-check">✓</span>':'<span class="tag-warn">offen</span>'}</td>`;
+    tb.appendChild(tr);
+  }
+}
+["#search","#fCat","#fStatus","#fUnreviewed"].forEach(s=>$(s).addEventListener("input",render));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// ── Editor ──────────────────────────────────────────────────────────────────
+function chips(name,opts,sel){
+  return `<div class="chips" data-multi="${name}">`+opts.map(o=>{
+    const on=(sel||[]).includes(o);
+    return `<label class="${on?'on':''}"><input type="checkbox" value="${esc(o)}" ${on?'checked':''}>${esc(o)}</label>`;
+  }).join("")+`</div>`;
+}
+function openEditor(food){
+  current = food || {__new:true, status:"draft", hay_groups:[], allergens:[], intolerances:[]};
+  $("#drawerTitle").textContent = food ? food.name : "Neues Lebensmittel";
+  $("#saveMsg").textContent="";
+  const f=current;
+  $("#drawerBody").innerHTML = `
+    <div class="field"><label>Name</label><input type="text" id="e_name" value="${esc(f.name||"")}"></div>
+    <div class="field"><label>Kategorie</label>
+      <select id="e_category"><option value="">— wählen —</option>
+      ${CATEGORIES.map(c=>`<option ${f.category===c?'selected':''}>${esc(c)}</option>`).join("")}</select></div>
+    <div class="field"><label>Ampel</label>
+      <div class="ampel-row" id="e_ampel">${AMPEL.map(([v,l])=>`<button type="button" data-v="${v}" class="${f.ampel===v?'sel':''}">${l}</button>`).join("")}</div></div>
+    <div class="field"><label>Ampel-Begründung</label><textarea id="e_ampel_reason">${esc(f.ampel_reason||"")}</textarea></div>
+    <div class="field"><label>Hay-Trennkost Hauptgruppe <span class="hint">(Mehrfachauswahl)</span></label>${chips("hay_groups",HAY,f.hay_groups)}</div>
+    <div class="field"><label>Trennkost-Hinweis</label><textarea id="e_trennkost_note">${esc(f.trennkost_note||"")}</textarea></div>
+    <div class="field"><label>Gesundheitlicher Hinweis</label><textarea id="e_health_note">${esc(f.health_note||"")}</textarea></div>
+    <div class="field"><label>Hinweise</label><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></div>
+    <div class="field"><label>Allergene</label>${chips("allergens",ALLERGENS,f.allergens)}</div>
+    <div class="field"><label>Intoleranzen / Unverträglichkeiten</label>${chips("intolerances",INTOL,f.intolerances)}</div>
+  `;
+  $("#e_ampel").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    $("#e_ampel").querySelectorAll("button").forEach(x=>x.classList.remove("sel")); b.classList.add("sel");
+  });
+  $("#drawerBody").querySelectorAll(".chips label").forEach(l=>l.querySelector("input").onchange=e=>l.classList.toggle("on",e.target.checked));
+  openDrawer(true);
+}
+function readMulti(name){return [...$("#drawerBody").querySelector(`[data-multi="${name}"]`).querySelectorAll("input:checked")].map(i=>i.value);}
+function selAmpel(){const b=$("#e_ampel").querySelector("button.sel");return b?b.dataset.v:null;}
+
+$("#saveBtn").onclick = async ()=>{
+  const name=$("#e_name").value.trim();
+  if(!name){ $("#saveMsg").textContent="Name fehlt"; $("#saveMsg").className="savemsg err"; return; }
+  const payload = {
+    name, category:$("#e_category").value||null, ampel:selAmpel(),
+    ampel_reason:val("e_ampel_reason"), trennkost_note:val("e_trennkost_note"),
+    health_note:val("e_health_note"), public_note:val("e_public_note"),
+    hay_groups:readMulti("hay_groups"), allergens:readMulti("allergens"),
+    intolerances:readMulti("intolerances"), reviewed_by_ricarda:true,
+  };
+  let res;
+  if(current.__new){
+    payload.item_id = slug(name); payload.status="draft"; payload.source="manual";
+    res = await sb.from("foods").insert(payload).select(EDIT_COLS).single();
+  }else{
+    res = await sb.from("foods").update(payload).eq("id",current.id).select(EDIT_COLS).single();
+  }
+  if(res.error){ $("#saveMsg").textContent="Fehler: "+res.error.message; $("#saveMsg").className="savemsg err"; return; }
+  // lokale Liste aktualisieren
+  const i=FOODS.findIndex(x=>x.id===res.data.id);
+  if(i>=0) FOODS[i]=res.data; else FOODS.push(res.data);
+  FOODS.sort((a,b)=>a.name.localeCompare(b.name));
+  $("#saveMsg").textContent="Gespeichert ✓"; $("#saveMsg").className="savemsg";
+  render(); setTimeout(()=>openDrawer(false),500);
+};
+const val=id=>{const e=$("#"+id);return e&&e.value.trim()?e.value.trim():null;};
+const slug=s=>s.toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+                 .replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||"item";
+
+$("#newBtn").onclick=()=>openEditor(null);
+function openDrawer(o){$("#drawer").classList.toggle("open",o);$("#scrim").classList.toggle("open",o);}
+$("#closeDrawer").onclick=$("#cancelBtn").onclick=$("#scrim").onclick=()=>openDrawer(false);
+
+init();
+</script>
+</body>
+</html>
