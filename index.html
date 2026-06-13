@@ -37,20 +37,31 @@
   .btn{padding:9px 13px;border:1px solid var(--line);border-radius:10px;background:#fff;font-weight:600}
   .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
   .btn.ghost{background:transparent}
+  .btn.danger{background:var(--rot);color:#fff;border-color:var(--rot)}
+  .btn.danger:hover{background:#b8402f}
   .count{color:var(--muted);font-size:13px;padding:0 20px 8px}
   .hint-bar{padding:0 20px 10px;color:var(--muted);font-size:12.5px}
+  .bulkbar{display:none;align-items:center;gap:10px;margin:0 20px 10px;padding:9px 14px;background:#fbe7e3;border:1px solid #f0cfc7;border-radius:10px}
+  .bulkbar.show{display:flex}
+  .bulkbar #bulkCount{font-weight:700;color:#a3392a;margin-right:auto}
 
   /* Tabelle */
   .wrap{padding:0 20px 80px;overflow-x:auto}
   table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
   th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:middle}
-  th{background:#f4efe7;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);position:sticky;top:0}
+  th{background:#f4efe7;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+  th.sortable:hover{color:var(--ink)}
+  th .arr{font-size:10px;color:var(--accent);margin-left:2px}
   tr:last-child td{border-bottom:0}
+  .cbcol{width:36px;text-align:center;padding-left:8px;padding-right:8px}
+  .cbcol input{width:16px;height:16px;cursor:pointer;accent-color:var(--accent)}
   td.namecell{cursor:pointer;white-space:nowrap}
   td.namecell:hover{text-decoration:underline}
   td.editable{cursor:pointer}
   td.editable:hover{background:#f3ece0;box-shadow:inset 0 0 0 1px var(--line)}
   td.col-tags{max-width:230px}
+  tr.sel td{background:#fbf3ea}
   .dot{display:inline-block;width:11px;height:11px;border-radius:50%}
   .dot.GRUEN{background:var(--gruen)} .dot.GELB{background:var(--gelb)} .dot.ROT{background:var(--rot)}
   .dot.none{background:#d8d2c6;box-shadow:inset 0 0 0 1.5px #c3bba9}
@@ -64,21 +75,20 @@
   .c-brown{background:#ece0d3;color:#6f4f33} .c-gray{background:#e8e8e6;color:#5f5c55}
   .c-purple{background:#e9e0f3;color:#5e3f86}
 
-  /* Inline-Editor (Popover) */
+  /* Inline-Editor */
   #cellpop{position:absolute;z-index:40;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:12px;min-width:240px;max-width:330px;display:none}
   #cellpop.open{display:block}
   #cellpop .pop-head{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
   #cellpop select{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
   #cellpop .pop-chips{display:flex;flex-wrap:wrap;gap:6px;max-height:230px;overflow:auto}
-  #cellpop .pop-chips label{cursor:pointer;opacity:.45;transition:opacity .1s}
+  #cellpop .pop-chips label{cursor:pointer;opacity:.45}
   #cellpop .pop-chips label.on{opacity:1;box-shadow:0 0 0 2px rgba(0,0,0,.12)}
   #cellpop .pop-chips input{display:none}
   #cellpop .pop-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
   #cellpop .ampel-row{display:flex;gap:8px}
   #cellpop .ampel-row button{flex:1;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff;font-weight:600;opacity:.55}
-  #cellpop .ampel-row button.sel{opacity:1;border-width:2px}
 
-  /* Detail-Schublade */
+  /* Schublade */
   .scrim{position:fixed;inset:0;background:rgba(20,16,10,.35);opacity:0;pointer-events:none;transition:.2s;z-index:20}
   .scrim.show{opacity:1;pointer-events:auto}
   .drawer{position:fixed;top:0;right:0;height:100vh;width:min(520px,100vw);background:var(--card);box-shadow:-8px 0 30px rgba(0,0,0,.12);transform:translateX(100%);transition:.25s;z-index:21;display:flex;flex-direction:column}
@@ -103,11 +113,11 @@
   .chips input{display:none}
   .savemsg{color:var(--gruen);font-size:13px;margin-right:auto;align-self:center}
   .savemsg.err{color:var(--rot)}
+  #cellpop .ampel-row button.sel{opacity:1;border-width:2px}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <section id="login">
   <div class="box">
     <h1>🌱 Lebensmittel-Pflege</h1>
@@ -119,7 +129,6 @@
   </div>
 </section>
 
-<!-- APP -->
 <main id="app" class="hidden">
   <header class="bar">
     <div class="title">🌱 Lebensmittel-Pflege</div>
@@ -140,23 +149,34 @@
     <button class="btn primary" id="newBtn">+ Neues Lebensmittel</button>
   </div>
   <div class="count" id="count"></div>
-  <div class="hint-bar">💡 Zelle anklicken zum direkten Ändern (Kategorie · Hay-Gruppe · Ampel · Allergene · Unverträglichkeiten). Auf den <b>Namen</b> klicken öffnet alle Details.</div>
+
+  <div class="bulkbar" id="bulkbar">
+    <span id="bulkCount"></span>
+    <button class="btn ghost" id="deselectBtn">Abwählen</button>
+    <button class="btn danger" id="deleteBtn">🗑 Ausgewählte löschen</button>
+  </div>
+
+  <div class="hint-bar">💡 Zelle anklicken zum Ändern (Kategorie · Hay-Gruppe · Ampel · Allergene · Unverträglichkeiten). Name anklicken = alle Details. Spalten-Überschrift anklicken = sortieren. Box links = auswählen (mit ⇧ mehrere).</div>
 
   <div class="wrap">
     <table>
       <thead><tr>
-        <th>Ampel</th><th>Name</th><th>Kategorie</th><th>Hay-Gruppe</th>
-        <th>Allergene</th><th>Unverträglichkeiten</th><th>Geprüft</th>
+        <th class="cbcol"><input type="checkbox" id="selAll" title="Alle auswählen"></th>
+        <th class="sortable" data-sort="ampel">Ampel<span class="arr"></span></th>
+        <th class="sortable" data-sort="name">Name<span class="arr"></span></th>
+        <th class="sortable" data-sort="category">Kategorie<span class="arr"></span></th>
+        <th class="sortable" data-sort="hay_groups">Hay-Gruppe<span class="arr"></span></th>
+        <th class="sortable" data-sort="allergens">Allergene<span class="arr"></span></th>
+        <th class="sortable" data-sort="intolerances">Unverträglichkeiten<span class="arr"></span></th>
+        <th class="sortable" data-sort="reviewed">Geprüft<span class="arr"></span></th>
       </tr></thead>
       <tbody id="rows"></tbody>
     </table>
   </div>
 </main>
 
-<!-- Inline-Editor -->
 <div id="cellpop"></div>
 
-<!-- Detail-Schublade -->
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer">
   <header><h2 id="drawerTitle">Bearbeiten</h2><button class="btn ghost" id="closeDrawer">✕</button></header>
@@ -173,7 +193,6 @@
 <script>
 const sb = supabase.createClient(window.LE_CONFIG.url, window.LE_CONFIG.key);
 
-// ── Vokabular ───────────────────────────────────────────────────────────────
 const CATEGORIES = ["Getreide / Backwaren","Kartoffeln / Reis / Pasta","Milchprodukte","Fleisch / Wurst",
   "Fisch / Meeresfrüchte","Eier","Gemüse / Salat","Obst","Hülsenfrüchte / Soja","Nüsse / Samen",
   "Fette / Öle","Saucen / Würzen","Süßes / Snacks","Getränke","Fertigprodukt / Convenience","Backzutaten"];
@@ -183,31 +202,28 @@ const ALLERGENS = ["Glutenhaltiges Getreide","Weizen","Roggen","Gerste","Hafer",
 const INTOL = ["Laktoseintoleranz","Zöliakie / Gluten","Glutensensitivität / Weizensensitivität",
   "Fruktosemalabsorption","Sorbit-Unverträglichkeit","Histaminintoleranz","Soja-Unverträglichkeit","keine typische"];
 const AMPEL = [["GRUEN","🟢 Grün"],["GELB","🟡 Gelb"],["ROT","🔴 Rot"]];
+const AMPEL_ORDER = {GRUEN:1,GELB:2,ROT:3};
 
-// ── Farben (deckt sich mit dem Notion-V3-Modell) ─────────────────────────────
-const HAY_COLOR = {"stärkearmes Gemüse/Salat":"green","Obst":"pink","Kohlenhydrat-Quelle":"yellow",
-  "Protein-Quelle":"red","Fett-Quelle":"orange"};
-const ALLERGEN_COLOR = {"Glutenhaltiges Getreide":"yellow","Weizen":"yellow","Roggen":"yellow","Gerste":"yellow",
-  "Hafer":"yellow","Milch":"blue","Laktose":"blue","Ei":"yellow","Soja":"green","Erdnuss":"brown",
-  "Schalenfrüchte / Nüsse":"brown","Fisch":"blue","Krebstiere":"pink","Weichtiere":"pink","Sellerie":"green",
-  "Senf":"yellow","Sesam":"orange","Sulfite":"gray","Lupine":"green"};
+const HAY_COLOR = {"stärkearmes Gemüse/Salat":"green","Obst":"pink","Kohlenhydrat-Quelle":"yellow","Protein-Quelle":"red","Fett-Quelle":"orange"};
+const ALLERGEN_COLOR = {"Glutenhaltiges Getreide":"yellow","Weizen":"yellow","Roggen":"yellow","Gerste":"yellow","Hafer":"yellow",
+  "Milch":"blue","Laktose":"blue","Ei":"yellow","Soja":"green","Erdnuss":"brown","Schalenfrüchte / Nüsse":"brown","Fisch":"blue",
+  "Krebstiere":"pink","Weichtiere":"pink","Sellerie":"green","Senf":"yellow","Sesam":"orange","Sulfite":"gray","Lupine":"green"};
 const INTOL_COLOR = {"Laktoseintoleranz":"blue","Zöliakie / Gluten":"yellow","Glutensensitivität / Weizensensitivität":"yellow",
-  "Fruktosemalabsorption":"green","Sorbit-Unverträglichkeit":"purple","Histaminintoleranz":"orange",
-  "Soja-Unverträglichkeit":"green","keine typische":"gray"};
+  "Fruktosemalabsorption":"green","Sorbit-Unverträglichkeit":"purple","Histaminintoleranz":"orange","Soja-Unverträglichkeit":"green","keine typische":"gray"};
 const FIELD_META = {
   category:    {label:"Kategorie",            opts:CATEGORIES, multi:false},
   hay_groups:  {label:"Hay-Trennkost Gruppe", opts:HAY,        multi:true,  color:HAY_COLOR},
   allergens:   {label:"Allergene",            opts:ALLERGENS,  multi:true,  color:ALLERGEN_COLOR},
   intolerances:{label:"Unverträglichkeiten",  opts:INTOL,      multi:true,  color:INTOL_COLOR},
 };
-
 const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances";
-let FOODS=[], current=null;
+
+let FOODS=[], current=null, selected=new Set(), lastIdx=null, visibleRows=[], sortField="name", sortDir="asc";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const chipsHtml=(vals,cmap)=>(vals&&vals.length)?vals.map(v=>`<span class="chip c-${cmap[v]||'gray'}">${esc(v)}</span>`).join("") : '<span class="muted">—</span>';
 
-// ── Auth ─────────────────────────────────────────────────────────────────────
+// ── Auth ──
 async function init(){
   const {data:{session}} = await sb.auth.getSession();
   session ? showApp(session) : $("#login").classList.remove("hidden");
@@ -228,26 +244,43 @@ $("#loginBtn").onclick = async ()=>{
 $("#password").addEventListener("keydown",e=>{if(e.key==="Enter")$("#loginBtn").click();});
 $("#logoutBtn").onclick = async ()=>{ await sb.auth.signOut(); location.reload(); };
 
-// ── Laden + Liste ────────────────────────────────────────────────────────────
+// ── Laden + Liste ──
 async function loadFoods(){
   const {data,error} = await sb.from("foods").select(EDIT_COLS).order("name");
   if(error){ alert("Fehler beim Laden: "+error.message); return; }
   FOODS = data; render();
 }
+function sortKey(f){
+  switch(sortField){
+    case "ampel": return AMPEL_ORDER[f.ampel]||0;
+    case "category": return (f.category||"").toLowerCase();
+    case "hay_groups": return (f.hay_groups||[]).join(",").toLowerCase();
+    case "allergens": return (f.allergens||[]).join(",").toLowerCase();
+    case "intolerances": return (f.intolerances||[]).join(",").toLowerCase();
+    case "reviewed": return f.reviewed_by_ricarda?1:0;
+    default: return f.name.toLowerCase();
+  }
+}
 function render(){
   const q=$("#search").value.trim().toLowerCase(), cat=$("#fCat").value, hay=$("#fHay").value,
         st=$("#fStatus").value, unrev=$("#fUnreviewed").checked;
-  const list = FOODS.filter(f=>
-    (!q || f.name.toLowerCase().includes(q)) &&
-    (!cat || f.category===cat) &&
-    (!hay || (f.hay_groups||[]).includes(hay)) &&
-    (!st || f.status===st) &&
+  let list = FOODS.filter(f=>
+    (!q || f.name.toLowerCase().includes(q)) && (!cat || f.category===cat) &&
+    (!hay || (f.hay_groups||[]).includes(hay)) && (!st || f.status===st) &&
     (!unrev || !f.reviewed_by_ricarda));
+  list.sort((a,b)=>{
+    const ka=sortKey(a),kb=sortKey(b); let c = ka<kb?-1:ka>kb?1:0;
+    if(c===0) c=a.name.localeCompare(b.name);
+    return sortDir==="asc"?c:-c;
+  });
+  visibleRows = list;
   $("#count").textContent = `${list.length} von ${FOODS.length} Lebensmitteln`;
   const tb=$("#rows"); tb.innerHTML="";
-  for(const f of list){
+  list.forEach((f,idx)=>{
     const tr=document.createElement("tr");
+    if(selected.has(f.id)) tr.classList.add("sel");
     tr.innerHTML = `
+      <td class="cbcol"><input type="checkbox" class="rowcb" ${selected.has(f.id)?"checked":""}></td>
       <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}</td>
       <td class="namecell"><b>${esc(f.name)}</b></td>
       <td class="editable" data-field="category">${f.category?esc(f.category):'<span class="muted">—</span>'}</td>
@@ -255,44 +288,78 @@ function render(){
       <td class="editable col-tags" data-field="allergens">${chipsHtml(f.allergens,ALLERGEN_COLOR)}</td>
       <td class="editable col-tags" data-field="intolerances">${chipsHtml(f.intolerances,INTOL_COLOR)}</td>
       <td>${f.reviewed_by_ricarda?'<span class="reviewed">✓</span>':'<span class="open">offen</span>'}</td>`;
+    tr.querySelector(".rowcb").onclick=e=>{ e.stopPropagation(); toggleRow(e,idx); };
     tr.querySelector(".namecell").onclick=()=>openDrawer(f);
     tr.querySelectorAll(".editable").forEach(td=>td.onclick=e=>{e.stopPropagation();openCellEditor(f,td.dataset.field,td);});
     tb.appendChild(tr);
-  }
+  });
+  // Kopf-Checkbox + Bulk-Leiste + Sort-Pfeile aktualisieren
+  const ids=list.map(r=>r.id), allSel=ids.length>0&&ids.every(id=>selected.has(id)), someSel=ids.some(id=>selected.has(id));
+  const sa=$("#selAll"); sa.checked=allSel; sa.indeterminate=someSel&&!allSel;
+  $("#bulkbar").classList.toggle("show",selected.size>0);
+  $("#bulkCount").textContent=`${selected.size} ausgewählt`;
+  document.querySelectorAll("th.sortable").forEach(th=>{
+    th.querySelector(".arr").textContent = th.dataset.sort===sortField ? (sortDir==="asc"?" ▲":" ▼") : "";
+  });
 }
 ["#search","#fCat","#fHay","#fStatus","#fUnreviewed"].forEach(s=>$(s).addEventListener("input",render));
 
-// ── Inline-Editor (Popover) ──────────────────────────────────────────────────
+// ── Auswahl / Löschen ──
+function toggleRow(e,idx){
+  const f=visibleRows[idx];
+  if(e.shiftKey && lastIdx!==null){
+    const [a,b]=[Math.min(lastIdx,idx),Math.max(lastIdx,idx)];
+    for(let j=a;j<=b;j++) selected.add(visibleRows[j].id);
+  } else {
+    selected.has(f.id) ? selected.delete(f.id) : selected.add(f.id);
+  }
+  lastIdx=idx; render();
+}
+$("#selAll").onclick=()=>{
+  const ids=visibleRows.map(r=>r.id), allSel=ids.every(id=>selected.has(id));
+  allSel ? ids.forEach(id=>selected.delete(id)) : ids.forEach(id=>selected.add(id));
+  lastIdx=null; render();
+};
+$("#deselectBtn").onclick=()=>{ selected.clear(); lastIdx=null; render(); };
+$("#deleteBtn").onclick=async()=>{
+  const ids=[...selected]; if(!ids.length) return;
+  const names=visibleRows.filter(f=>selected.has(f.id)).map(f=>f.name).slice(0,5).join(", ");
+  if(!confirm(`${ids.length} Lebensmittel wirklich löschen?\n\n${names}${ids.length>5?" …":""}\n\nDas kann nicht rückgängig gemacht werden.`)) return;
+  const {error}=await sb.from("foods").delete().in("id",ids);
+  if(error){ alert("Fehler beim Löschen: "+error.message); return; }
+  FOODS=FOODS.filter(f=>!selected.has(f.id)); selected.clear(); lastIdx=null; render();
+};
+
+// ── Sortieren ──
+document.querySelectorAll("th.sortable").forEach(th=>th.onclick=()=>{
+  const f=th.dataset.sort;
+  if(f===sortField) sortDir = sortDir==="asc"?"desc":"asc";
+  else { sortField=f; sortDir="asc"; }
+  render();
+});
+
+// ── Inline-Editor ──
 const pop=$("#cellpop");
 function closePop(){ pop.classList.remove("open"); }
 document.addEventListener("click",e=>{ if(pop.classList.contains("open") && !pop.contains(e.target) && !e.target.closest(".editable")) closePop(); });
 window.addEventListener("scroll",closePop,true);
-
 function openCellEditor(food,field,cell){
-  if(field==="ampel"){ return openAmpelEditor(food,cell); }
+  if(field==="ampel") return openAmpelEditor(food,cell);
   const meta=FIELD_META[field]; let html=`<div class="pop-head">${meta.label}</div>`;
   if(!meta.multi){
-    html+=`<select id="popsel"><option value="">— keine —</option>`+
-      meta.opts.map(o=>`<option ${food.category===o?'selected':''}>${esc(o)}</option>`).join("")+`</select>`;
+    html+=`<select id="popsel"><option value="">— keine —</option>`+meta.opts.map(o=>`<option ${food.category===o?'selected':''}>${esc(o)}</option>`).join("")+`</select>`;
   }else{
     const sel=food[field]||[];
-    html+=`<div class="pop-chips">`+meta.opts.map(o=>
-      `<label class="chip c-${(meta.color[o]||'gray')} ${sel.includes(o)?'on':''}"><input type="checkbox" value="${esc(o)}" ${sel.includes(o)?'checked':''}>${esc(o)}</label>`).join("")+`</div>`;
+    html+=`<div class="pop-chips">`+meta.opts.map(o=>`<label class="chip c-${meta.color[o]||'gray'} ${sel.includes(o)?'on':''}"><input type="checkbox" value="${esc(o)}" ${sel.includes(o)?'checked':''}>${esc(o)}</label>`).join("")+`</div>`;
   }
   html+=`<div class="pop-foot"><button class="btn" id="popcancel">Abbrechen</button><button class="btn primary" id="popsave">Speichern</button></div>`;
   showPop(html,cell);
   if(meta.multi) pop.querySelectorAll(".pop-chips label").forEach(l=>l.querySelector("input").onchange=e=>l.classList.toggle("on",e.target.checked));
   $("#popcancel").onclick=closePop;
-  $("#popsave").onclick=async()=>{
-    const value = meta.multi ? [...pop.querySelectorAll("input:checked")].map(i=>i.value) : ($("#popsel").value||null);
-    await saveField(food,field,value);
-  };
+  $("#popsave").onclick=()=>saveField(food,field, meta.multi ? [...pop.querySelectorAll("input:checked")].map(i=>i.value) : ($("#popsel").value||null));
 }
 function openAmpelEditor(food,cell){
-  let html=`<div class="pop-head">Ampel</div><div class="ampel-row">`+
-    AMPEL.map(([v,l])=>`<button data-v="${v}" class="${food.ampel===v?'sel':''}">${l}</button>`).join("")+`</div>`+
-    `<div class="pop-foot"><button class="btn" id="popclear">leeren</button></div>`;
-  showPop(html,cell);
+  showPop(`<div class="pop-head">Ampel</div><div class="ampel-row">`+AMPEL.map(([v,l])=>`<button data-v="${v}" class="${food.ampel===v?'sel':''}">${l}</button>`).join("")+`</div><div class="pop-foot"><button class="btn" id="popclear">leeren</button></div>`,cell);
   pop.querySelectorAll(".ampel-row button").forEach(b=>b.onclick=()=>saveField(food,"ampel",b.dataset.v));
   $("#popclear").onclick=()=>saveField(food,"ampel",null);
 }
@@ -310,18 +377,15 @@ async function saveField(food,field,value){
   closePop(); render();
 }
 
-// ── Detail-Schublade (alle Felder) ───────────────────────────────────────────
-function drawerChips(name,opts,sel,cmap){
-  return `<div class="chips" data-multi="${name}">`+opts.map(o=>{
-    const on=(sel||[]).includes(o);
-    return `<label class="${on?'on':''}"><input type="checkbox" value="${esc(o)}" ${on?'checked':''}>${esc(o)}</label>`;
-  }).join("")+`</div>`;
+// ── Schublade ──
+function drawerChips(name,opts,sel){
+  return `<div class="chips" data-multi="${name}">`+opts.map(o=>{const on=(sel||[]).includes(o);
+    return `<label class="${on?'on':''}"><input type="checkbox" value="${esc(o)}" ${on?'checked':''}>${esc(o)}</label>`;}).join("")+`</div>`;
 }
 function openDrawer(food){
   current = food || {__new:true,status:"draft",hay_groups:[],allergens:[],intolerances:[]};
   $("#drawerTitle").textContent = food ? food.name : "Neues Lebensmittel";
-  $("#saveMsg").textContent="";
-  const f=current;
+  $("#saveMsg").textContent=""; const f=current;
   $("#drawerBody").innerHTML=`
     <div class="field"><label>Name</label><input type="text" id="e_name" value="${esc(f.name||"")}"></div>
     <div class="field"><label>Kategorie</label><select id="e_category"><option value="">— wählen —</option>${CATEGORIES.map(c=>`<option ${f.category===c?'selected':''}>${esc(c)}</option>`).join("")}</select></div>
@@ -347,15 +411,13 @@ $("#saveBtn").onclick=async()=>{
   const payload={name,category:$("#e_category").value||null,ampel:a?a.dataset.v:null,
     ampel_reason:dval("e_ampel_reason"),trennkost_note:dval("e_trennkost_note"),
     health_note:dval("e_health_note"),public_note:dval("e_public_note"),
-    hay_groups:dmulti("hay_groups"),allergens:dmulti("allergens"),intolerances:dmulti("intolerances"),
-    reviewed_by_ricarda:true};
+    hay_groups:dmulti("hay_groups"),allergens:dmulti("allergens"),intolerances:dmulti("intolerances"),reviewed_by_ricarda:true};
   let res;
   if(current.__new){ payload.item_id=slug(name); payload.status="draft"; payload.source="manual";
     res=await sb.from("foods").insert(payload).select(EDIT_COLS).single(); }
   else res=await sb.from("foods").update(payload).eq("id",current.id).select(EDIT_COLS).single();
   if(res.error){ $("#saveMsg").textContent="Fehler: "+res.error.message; $("#saveMsg").className="savemsg err"; return; }
   const i=FOODS.findIndex(x=>x.id===res.data.id); if(i>=0) FOODS[i]=res.data; else FOODS.push(res.data);
-  FOODS.sort((a,b)=>a.name.localeCompare(b.name));
   $("#saveMsg").textContent="Gespeichert ✓"; $("#saveMsg").className="savemsg";
   render(); setTimeout(closeDrawer,500);
 };
