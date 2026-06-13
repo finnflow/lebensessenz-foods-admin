@@ -7,72 +7,90 @@
 <style>
   :root{
     --bg:#faf7f2; --card:#fff; --ink:#2c2a26; --muted:#8a8276; --line:#e8e2d8;
-    --accent:#b8893f; --accent-dark:#9a7333;
-    --gruen:#3f9d54; --gelb:#e0a92e; --rot:#cf4b3a;
+    --accent:#b8893f; --gruen:#3f9d54; --gelb:#e0a92e; --rot:#cf4b3a;
     --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
   }
   *{box-sizing:border-box}
-  body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-       background:var(--bg);color:var(--ink)}
+  body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
   button{font:inherit;cursor:pointer}
   input,select,textarea{font:inherit;color:var(--ink)}
   .hidden{display:none!important}
+  .muted{color:var(--muted)}
 
   /* Login */
   #login{min-height:100vh;display:grid;place-items:center;padding:24px}
-  #login .box{background:var(--card);border:1px solid var(--line);border-radius:16px;
-    box-shadow:var(--shadow);padding:32px;width:100%;max-width:380px}
+  #login .box{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:32px;width:100%;max-width:380px}
   #login h1{margin:0 0 4px;font-size:22px}
   #login p{margin:0 0 20px;color:var(--muted);font-size:14px}
   #login input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;margin-bottom:12px;background:#fff}
   #login button{width:100%;padding:12px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:600}
   #login .err{color:var(--rot);font-size:13px;min-height:18px;margin-top:4px}
 
-  /* App shell */
-  header.bar{position:sticky;top:0;z-index:10;background:rgba(250,247,242,.92);backdrop-filter:blur(8px);
-    border-bottom:1px solid var(--line);padding:12px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  /* Shell */
+  header.bar{position:sticky;top:0;z-index:10;background:rgba(250,247,242,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
   header.bar .title{font-weight:700;font-size:16px;margin-right:auto;display:flex;gap:8px;align-items:center}
   header.bar .who{color:var(--muted);font-size:13px}
   .controls{display:flex;gap:10px;flex-wrap:wrap;padding:14px 20px;align-items:center}
-  .controls input[type=search]{flex:1;min-width:220px;padding:10px 13px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .controls input[type=search]{flex:1;min-width:200px;padding:10px 13px;border:1px solid var(--line);border-radius:10px;background:#fff}
   .controls select{padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}
   .controls label{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:13px}
-  .btn{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;font-weight:600}
+  .btn{padding:9px 13px;border:1px solid var(--line);border-radius:10px;background:#fff;font-weight:600}
   .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
   .btn.ghost{background:transparent}
   .count{color:var(--muted);font-size:13px;padding:0 20px 8px}
+  .hint-bar{padding:0 20px 10px;color:var(--muted);font-size:12.5px}
 
-  /* Table */
-  .wrap{padding:0 20px 60px}
+  /* Tabelle */
+  .wrap{padding:0 20px 80px;overflow-x:auto}
   table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:middle}
-  th{background:#f4efe7;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:middle}
+  th{background:#f4efe7;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);position:sticky;top:0}
   tr:last-child td{border-bottom:0}
-  tbody tr{cursor:pointer}
-  tbody tr:hover{background:#fbf8f2}
-  .dot{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:middle}
+  td.namecell{cursor:pointer;white-space:nowrap}
+  td.namecell:hover{text-decoration:underline}
+  td.editable{cursor:pointer}
+  td.editable:hover{background:#f3ece0;box-shadow:inset 0 0 0 1px var(--line)}
+  td.col-tags{max-width:230px}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:50%}
   .dot.GRUEN{background:var(--gruen)} .dot.GELB{background:var(--gelb)} .dot.ROT{background:var(--rot)}
-  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;background:#f0ece3;color:var(--muted)}
-  .pill.draft{background:#fbe9c8;color:#8a5a16}
-  .tag-check{color:var(--gruen);font-weight:700}
-  .tag-warn{color:#b9912f}
+  .dot.none{background:#d8d2c6;box-shadow:inset 0 0 0 1.5px #c3bba9}
+  .reviewed{color:var(--gruen);font-weight:700} .open{color:#b9912f}
 
-  /* Editor drawer */
+  /* Farb-Chips */
+  .chip{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;line-height:1.55;margin:1px 2px 1px 0;white-space:nowrap}
+  .c-green{background:#e3f3e6;color:#2f6b3f} .c-yellow{background:#fbf0cf;color:#876a16}
+  .c-red{background:#f7dcd7;color:#a3392a} .c-orange{background:#fbe6cf;color:#955619}
+  .c-pink{background:#f8dde8;color:#9c3b63} .c-blue{background:#d9e8f5;color:#2f5d86}
+  .c-brown{background:#ece0d3;color:#6f4f33} .c-gray{background:#e8e8e6;color:#5f5c55}
+  .c-purple{background:#e9e0f3;color:#5e3f86}
+
+  /* Inline-Editor (Popover) */
+  #cellpop{position:absolute;z-index:40;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:12px;min-width:240px;max-width:330px;display:none}
+  #cellpop.open{display:block}
+  #cellpop .pop-head{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+  #cellpop select{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  #cellpop .pop-chips{display:flex;flex-wrap:wrap;gap:6px;max-height:230px;overflow:auto}
+  #cellpop .pop-chips label{cursor:pointer;opacity:.45;transition:opacity .1s}
+  #cellpop .pop-chips label.on{opacity:1;box-shadow:0 0 0 2px rgba(0,0,0,.12)}
+  #cellpop .pop-chips input{display:none}
+  #cellpop .pop-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+  #cellpop .ampel-row{display:flex;gap:8px}
+  #cellpop .ampel-row button{flex:1;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff;font-weight:600;opacity:.55}
+  #cellpop .ampel-row button.sel{opacity:1;border-width:2px}
+
+  /* Detail-Schublade */
   .scrim{position:fixed;inset:0;background:rgba(20,16,10,.35);opacity:0;pointer-events:none;transition:.2s;z-index:20}
-  .scrim.open{opacity:1;pointer-events:auto}
-  .drawer{position:fixed;top:0;right:0;height:100vh;width:min(520px,100vw);background:var(--card);
-    box-shadow:-8px 0 30px rgba(0,0,0,.12);transform:translateX(100%);transition:.25s;z-index:21;
-    display:flex;flex-direction:column}
-  .drawer.open{transform:none}
+  .scrim.show{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100vh;width:min(520px,100vw);background:var(--card);box-shadow:-8px 0 30px rgba(0,0,0,.12);transform:translateX(100%);transition:.25s;z-index:21;display:flex;flex-direction:column}
+  .drawer.show{transform:none}
   .drawer header{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
   .drawer header h2{margin:0;font-size:17px;flex:1}
   .drawer .body{overflow:auto;padding:18px 20px;flex:1}
   .drawer footer{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
   .field{margin-bottom:16px}
   .field>label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
-  .field .hint{color:var(--muted);font-weight:400;font-size:12px}
   .field input[type=text],.field select,.field textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff}
-  .field textarea{min-height:62px;resize:vertical}
+  .field textarea{min-height:60px;resize:vertical}
   .ampel-row{display:flex;gap:8px}
   .ampel-row button{flex:1;padding:9px;border:1px solid var(--line);border-radius:9px;background:#fff;font-weight:600;opacity:.55}
   .ampel-row button.sel{opacity:1;border-width:2px}
@@ -80,8 +98,7 @@
   .ampel-row button[data-v=GELB].sel{border-color:var(--gelb);color:var(--gelb)}
   .ampel-row button[data-v=ROT].sel{border-color:var(--rot);color:var(--rot)}
   .chips{display:flex;flex-wrap:wrap;gap:7px}
-  .chips label{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);
-    border-radius:999px;font-size:13px;cursor:pointer;background:#fff}
+  .chips label{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);border-radius:999px;font-size:13px;cursor:pointer;background:#fff}
   .chips label.on{background:#f3ece0;border-color:var(--accent)}
   .chips input{display:none}
   .savemsg{color:var(--gruen);font-size:13px;margin-right:auto;align-self:center}
@@ -113,6 +130,7 @@
   <div class="controls">
     <input type="search" id="search" placeholder="Suche nach Name…" />
     <select id="fCat"><option value="">Alle Kategorien</option></select>
+    <select id="fHay"><option value="">Alle Hay-Gruppen</option></select>
     <select id="fStatus">
       <option value="">Alle</option>
       <option value="draft">Nur neue (Entwurf)</option>
@@ -122,25 +140,26 @@
     <button class="btn primary" id="newBtn">+ Neues Lebensmittel</button>
   </div>
   <div class="count" id="count"></div>
+  <div class="hint-bar">💡 Zelle anklicken zum direkten Ändern (Kategorie · Hay-Gruppe · Ampel · Allergene · Unverträglichkeiten). Auf den <b>Namen</b> klicken öffnet alle Details.</div>
 
   <div class="wrap">
     <table>
       <thead><tr>
-        <th style="width:30px"></th><th>Name</th><th>Kategorie</th>
-        <th>Hay-Gruppe</th><th>Status</th><th>Geprüft</th>
+        <th>Ampel</th><th>Name</th><th>Kategorie</th><th>Hay-Gruppe</th>
+        <th>Allergene</th><th>Unverträglichkeiten</th><th>Geprüft</th>
       </tr></thead>
       <tbody id="rows"></tbody>
     </table>
   </div>
 </main>
 
-<!-- EDITOR -->
+<!-- Inline-Editor -->
+<div id="cellpop"></div>
+
+<!-- Detail-Schublade -->
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer">
-  <header>
-    <h2 id="drawerTitle">Bearbeiten</h2>
-    <button class="btn ghost" id="closeDrawer">✕</button>
-  </header>
+  <header><h2 id="drawerTitle">Bearbeiten</h2><button class="btn ghost" id="closeDrawer">✕</button></header>
   <div class="body" id="drawerBody"></div>
   <footer>
     <span class="savemsg" id="saveMsg"></span>
@@ -154,143 +173,195 @@
 <script>
 const sb = supabase.createClient(window.LE_CONFIG.url, window.LE_CONFIG.key);
 
-// ── Vokabular (fix; deckt sich mit dem Notion-V3-Modell) ──────────────────
-const CATEGORIES = ["Getreide / Backwaren","Kartoffeln / Reis / Pasta","Milchprodukte",
-  "Fleisch / Wurst","Fisch / Meeresfrüchte","Eier","Gemüse / Salat","Obst",
-  "Hülsenfrüchte / Soja","Nüsse / Samen","Fette / Öle","Saucen / Würzen",
-  "Süßes / Snacks","Getränke","Fertigprodukt / Convenience","Backzutaten"];
+// ── Vokabular ───────────────────────────────────────────────────────────────
+const CATEGORIES = ["Getreide / Backwaren","Kartoffeln / Reis / Pasta","Milchprodukte","Fleisch / Wurst",
+  "Fisch / Meeresfrüchte","Eier","Gemüse / Salat","Obst","Hülsenfrüchte / Soja","Nüsse / Samen",
+  "Fette / Öle","Saucen / Würzen","Süßes / Snacks","Getränke","Fertigprodukt / Convenience","Backzutaten"];
 const HAY = ["stärkearmes Gemüse/Salat","Obst","Kohlenhydrat-Quelle","Protein-Quelle","Fett-Quelle"];
-const ALLERGENS = ["Glutenhaltiges Getreide","Weizen","Roggen","Gerste","Hafer","Milch","Laktose",
-  "Ei","Soja","Erdnuss","Schalenfrüchte / Nüsse","Fisch","Krebstiere","Weichtiere","Sellerie",
-  "Senf","Sesam","Sulfite","Lupine"];
+const ALLERGENS = ["Glutenhaltiges Getreide","Weizen","Roggen","Gerste","Hafer","Milch","Laktose","Ei","Soja",
+  "Erdnuss","Schalenfrüchte / Nüsse","Fisch","Krebstiere","Weichtiere","Sellerie","Senf","Sesam","Sulfite","Lupine"];
 const INTOL = ["Laktoseintoleranz","Zöliakie / Gluten","Glutensensitivität / Weizensensitivität",
   "Fruktosemalabsorption","Sorbit-Unverträglichkeit","Histaminintoleranz","Soja-Unverträglichkeit","keine typische"];
 const AMPEL = [["GRUEN","🟢 Grün"],["GELB","🟡 Gelb"],["ROT","🔴 Rot"]];
-// Nur diese Felder sieht/ändert Ricarda. Engine-Felder bleiben unangetastet.
-const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances";
 
+// ── Farben (deckt sich mit dem Notion-V3-Modell) ─────────────────────────────
+const HAY_COLOR = {"stärkearmes Gemüse/Salat":"green","Obst":"pink","Kohlenhydrat-Quelle":"yellow",
+  "Protein-Quelle":"red","Fett-Quelle":"orange"};
+const ALLERGEN_COLOR = {"Glutenhaltiges Getreide":"yellow","Weizen":"yellow","Roggen":"yellow","Gerste":"yellow",
+  "Hafer":"yellow","Milch":"blue","Laktose":"blue","Ei":"yellow","Soja":"green","Erdnuss":"brown",
+  "Schalenfrüchte / Nüsse":"brown","Fisch":"blue","Krebstiere":"pink","Weichtiere":"pink","Sellerie":"green",
+  "Senf":"yellow","Sesam":"orange","Sulfite":"gray","Lupine":"green"};
+const INTOL_COLOR = {"Laktoseintoleranz":"blue","Zöliakie / Gluten":"yellow","Glutensensitivität / Weizensensitivität":"yellow",
+  "Fruktosemalabsorption":"green","Sorbit-Unverträglichkeit":"purple","Histaminintoleranz":"orange",
+  "Soja-Unverträglichkeit":"green","keine typische":"gray"};
+const FIELD_META = {
+  category:    {label:"Kategorie",            opts:CATEGORIES, multi:false},
+  hay_groups:  {label:"Hay-Trennkost Gruppe", opts:HAY,        multi:true,  color:HAY_COLOR},
+  allergens:   {label:"Allergene",            opts:ALLERGENS,  multi:true,  color:ALLERGEN_COLOR},
+  intolerances:{label:"Unverträglichkeiten",  opts:INTOL,      multi:true,  color:INTOL_COLOR},
+};
+
+const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances";
 let FOODS=[], current=null;
 const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const chipsHtml=(vals,cmap)=>(vals&&vals.length)?vals.map(v=>`<span class="chip c-${cmap[v]||'gray'}">${esc(v)}</span>`).join("") : '<span class="muted">—</span>';
 
-// ── Auth ──────────────────────────────────────────────────────────────────
+// ── Auth ─────────────────────────────────────────────────────────────────────
 async function init(){
   const {data:{session}} = await sb.auth.getSession();
-  if(session) showApp(session); else showLogin();
+  session ? showApp(session) : $("#login").classList.remove("hidden");
 }
-function showLogin(){ $("#login").classList.remove("hidden"); $("#app").classList.add("hidden"); }
 async function showApp(session){
   $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
   $("#whoami").textContent = session.user.email;
-  CATEGORIES.forEach(c=>{const o=document.createElement("option");o.value=o.textContent=c;$("#fCat").appendChild(o);});
+  CATEGORIES.forEach(c=>$("#fCat").appendChild(new Option(c,c)));
+  HAY.forEach(h=>$("#fHay").appendChild(new Option(h,h)));
   await loadFoods();
 }
 $("#loginBtn").onclick = async ()=>{
   $("#loginErr").textContent="";
   const {data,error} = await sb.auth.signInWithPassword({email:$("#email").value.trim(),password:$("#password").value});
-  if(error){ $("#loginErr").textContent = "Anmeldung fehlgeschlagen."; return; }
+  if(error){ $("#loginErr").textContent="Anmeldung fehlgeschlagen."; return; }
   showApp(data.session);
 };
 $("#password").addEventListener("keydown",e=>{if(e.key==="Enter")$("#loginBtn").click();});
 $("#logoutBtn").onclick = async ()=>{ await sb.auth.signOut(); location.reload(); };
 
-// ── Daten laden + Liste ─────────────────────────────────────────────────────
+// ── Laden + Liste ────────────────────────────────────────────────────────────
 async function loadFoods(){
   const {data,error} = await sb.from("foods").select(EDIT_COLS).order("name");
   if(error){ alert("Fehler beim Laden: "+error.message); return; }
   FOODS = data; render();
 }
 function render(){
-  const q=$("#search").value.trim().toLowerCase(), cat=$("#fCat").value,
+  const q=$("#search").value.trim().toLowerCase(), cat=$("#fCat").value, hay=$("#fHay").value,
         st=$("#fStatus").value, unrev=$("#fUnreviewed").checked;
   const list = FOODS.filter(f=>
     (!q || f.name.toLowerCase().includes(q)) &&
-    (!cat || f.category===cat) && (!st || f.status===st) &&
+    (!cat || f.category===cat) &&
+    (!hay || (f.hay_groups||[]).includes(hay)) &&
+    (!st || f.status===st) &&
     (!unrev || !f.reviewed_by_ricarda));
   $("#count").textContent = `${list.length} von ${FOODS.length} Lebensmitteln`;
   const tb=$("#rows"); tb.innerHTML="";
   for(const f of list){
-    const tr=document.createElement("tr"); tr.onclick=()=>openEditor(f);
+    const tr=document.createElement("tr");
     tr.innerHTML = `
-      <td>${f.ampel?`<span class="dot ${f.ampel}"></span>`:""}</td>
-      <td><b>${esc(f.name)}</b></td>
-      <td>${esc(f.category||"—")}</td>
-      <td>${(f.hay_groups||[]).map(esc).join(", ")||"—"}</td>
-      <td>${f.status==="draft"?'<span class="pill draft">Entwurf</span>':'<span class="pill">veröffentlicht</span>'}</td>
-      <td>${f.reviewed_by_ricarda?'<span class="tag-check">✓</span>':'<span class="tag-warn">offen</span>'}</td>`;
+      <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}</td>
+      <td class="namecell"><b>${esc(f.name)}</b></td>
+      <td class="editable" data-field="category">${f.category?esc(f.category):'<span class="muted">—</span>'}</td>
+      <td class="editable col-tags" data-field="hay_groups">${chipsHtml(f.hay_groups,HAY_COLOR)}</td>
+      <td class="editable col-tags" data-field="allergens">${chipsHtml(f.allergens,ALLERGEN_COLOR)}</td>
+      <td class="editable col-tags" data-field="intolerances">${chipsHtml(f.intolerances,INTOL_COLOR)}</td>
+      <td>${f.reviewed_by_ricarda?'<span class="reviewed">✓</span>':'<span class="open">offen</span>'}</td>`;
+    tr.querySelector(".namecell").onclick=()=>openDrawer(f);
+    tr.querySelectorAll(".editable").forEach(td=>td.onclick=e=>{e.stopPropagation();openCellEditor(f,td.dataset.field,td);});
     tb.appendChild(tr);
   }
 }
-["#search","#fCat","#fStatus","#fUnreviewed"].forEach(s=>$(s).addEventListener("input",render));
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+["#search","#fCat","#fHay","#fStatus","#fUnreviewed"].forEach(s=>$(s).addEventListener("input",render));
 
-// ── Editor ──────────────────────────────────────────────────────────────────
-function chips(name,opts,sel){
+// ── Inline-Editor (Popover) ──────────────────────────────────────────────────
+const pop=$("#cellpop");
+function closePop(){ pop.classList.remove("open"); }
+document.addEventListener("click",e=>{ if(pop.classList.contains("open") && !pop.contains(e.target) && !e.target.closest(".editable")) closePop(); });
+window.addEventListener("scroll",closePop,true);
+
+function openCellEditor(food,field,cell){
+  if(field==="ampel"){ return openAmpelEditor(food,cell); }
+  const meta=FIELD_META[field]; let html=`<div class="pop-head">${meta.label}</div>`;
+  if(!meta.multi){
+    html+=`<select id="popsel"><option value="">— keine —</option>`+
+      meta.opts.map(o=>`<option ${food.category===o?'selected':''}>${esc(o)}</option>`).join("")+`</select>`;
+  }else{
+    const sel=food[field]||[];
+    html+=`<div class="pop-chips">`+meta.opts.map(o=>
+      `<label class="chip c-${(meta.color[o]||'gray')} ${sel.includes(o)?'on':''}"><input type="checkbox" value="${esc(o)}" ${sel.includes(o)?'checked':''}>${esc(o)}</label>`).join("")+`</div>`;
+  }
+  html+=`<div class="pop-foot"><button class="btn" id="popcancel">Abbrechen</button><button class="btn primary" id="popsave">Speichern</button></div>`;
+  showPop(html,cell);
+  if(meta.multi) pop.querySelectorAll(".pop-chips label").forEach(l=>l.querySelector("input").onchange=e=>l.classList.toggle("on",e.target.checked));
+  $("#popcancel").onclick=closePop;
+  $("#popsave").onclick=async()=>{
+    const value = meta.multi ? [...pop.querySelectorAll("input:checked")].map(i=>i.value) : ($("#popsel").value||null);
+    await saveField(food,field,value);
+  };
+}
+function openAmpelEditor(food,cell){
+  let html=`<div class="pop-head">Ampel</div><div class="ampel-row">`+
+    AMPEL.map(([v,l])=>`<button data-v="${v}" class="${food.ampel===v?'sel':''}">${l}</button>`).join("")+`</div>`+
+    `<div class="pop-foot"><button class="btn" id="popclear">leeren</button></div>`;
+  showPop(html,cell);
+  pop.querySelectorAll(".ampel-row button").forEach(b=>b.onclick=()=>saveField(food,"ampel",b.dataset.v));
+  $("#popclear").onclick=()=>saveField(food,"ampel",null);
+}
+function showPop(html,cell){
+  pop.innerHTML=html;
+  const r=cell.getBoundingClientRect();
+  pop.style.top=(window.scrollY+r.bottom+4)+"px";
+  pop.style.left=Math.max(8,Math.min(window.scrollX+r.left, window.scrollX+window.innerWidth-340))+"px";
+  pop.classList.add("open");
+}
+async function saveField(food,field,value){
+  const res=await sb.from("foods").update({[field]:value, reviewed_by_ricarda:true}).eq("id",food.id).select(EDIT_COLS).single();
+  if(res.error){ alert("Fehler: "+res.error.message); return; }
+  const i=FOODS.findIndex(x=>x.id===food.id); if(i>=0) FOODS[i]=res.data;
+  closePop(); render();
+}
+
+// ── Detail-Schublade (alle Felder) ───────────────────────────────────────────
+function drawerChips(name,opts,sel,cmap){
   return `<div class="chips" data-multi="${name}">`+opts.map(o=>{
     const on=(sel||[]).includes(o);
     return `<label class="${on?'on':''}"><input type="checkbox" value="${esc(o)}" ${on?'checked':''}>${esc(o)}</label>`;
   }).join("")+`</div>`;
 }
-function openEditor(food){
-  current = food || {__new:true, status:"draft", hay_groups:[], allergens:[], intolerances:[]};
+function openDrawer(food){
+  current = food || {__new:true,status:"draft",hay_groups:[],allergens:[],intolerances:[]};
   $("#drawerTitle").textContent = food ? food.name : "Neues Lebensmittel";
   $("#saveMsg").textContent="";
   const f=current;
-  $("#drawerBody").innerHTML = `
+  $("#drawerBody").innerHTML=`
     <div class="field"><label>Name</label><input type="text" id="e_name" value="${esc(f.name||"")}"></div>
-    <div class="field"><label>Kategorie</label>
-      <select id="e_category"><option value="">— wählen —</option>
-      ${CATEGORIES.map(c=>`<option ${f.category===c?'selected':''}>${esc(c)}</option>`).join("")}</select></div>
-    <div class="field"><label>Ampel</label>
-      <div class="ampel-row" id="e_ampel">${AMPEL.map(([v,l])=>`<button type="button" data-v="${v}" class="${f.ampel===v?'sel':''}">${l}</button>`).join("")}</div></div>
+    <div class="field"><label>Kategorie</label><select id="e_category"><option value="">— wählen —</option>${CATEGORIES.map(c=>`<option ${f.category===c?'selected':''}>${esc(c)}</option>`).join("")}</select></div>
+    <div class="field"><label>Ampel</label><div class="ampel-row" id="e_ampel">${AMPEL.map(([v,l])=>`<button type="button" data-v="${v}" class="${f.ampel===v?'sel':''}">${l}</button>`).join("")}</div></div>
     <div class="field"><label>Ampel-Begründung</label><textarea id="e_ampel_reason">${esc(f.ampel_reason||"")}</textarea></div>
-    <div class="field"><label>Hay-Trennkost Hauptgruppe <span class="hint">(Mehrfachauswahl)</span></label>${chips("hay_groups",HAY,f.hay_groups)}</div>
+    <div class="field"><label>Hay-Trennkost Hauptgruppe</label>${drawerChips("hay_groups",HAY,f.hay_groups)}</div>
     <div class="field"><label>Trennkost-Hinweis</label><textarea id="e_trennkost_note">${esc(f.trennkost_note||"")}</textarea></div>
     <div class="field"><label>Gesundheitlicher Hinweis</label><textarea id="e_health_note">${esc(f.health_note||"")}</textarea></div>
     <div class="field"><label>Hinweise</label><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></div>
-    <div class="field"><label>Allergene</label>${chips("allergens",ALLERGENS,f.allergens)}</div>
-    <div class="field"><label>Intoleranzen / Unverträglichkeiten</label>${chips("intolerances",INTOL,f.intolerances)}</div>
-  `;
-  $("#e_ampel").querySelectorAll("button").forEach(b=>b.onclick=()=>{
-    $("#e_ampel").querySelectorAll("button").forEach(x=>x.classList.remove("sel")); b.classList.add("sel");
-  });
+    <div class="field"><label>Allergene</label>${drawerChips("allergens",ALLERGENS,f.allergens)}</div>
+    <div class="field"><label>Unverträglichkeiten</label>${drawerChips("intolerances",INTOL,f.intolerances)}</div>`;
+  $("#e_ampel").querySelectorAll("button").forEach(b=>b.onclick=()=>{$("#e_ampel").querySelectorAll("button").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");});
   $("#drawerBody").querySelectorAll(".chips label").forEach(l=>l.querySelector("input").onchange=e=>l.classList.toggle("on",e.target.checked));
-  openDrawer(true);
+  $("#scrim").classList.add("show"); $("#drawer").classList.add("show");
 }
-function readMulti(name){return [...$("#drawerBody").querySelector(`[data-multi="${name}"]`).querySelectorAll("input:checked")].map(i=>i.value);}
-function selAmpel(){const b=$("#e_ampel").querySelector("button.sel");return b?b.dataset.v:null;}
-
-$("#saveBtn").onclick = async ()=>{
+const dval=id=>{const e=$("#"+id);return e&&e.value.trim()?e.value.trim():null;};
+const dmulti=n=>[...$("#drawerBody").querySelector(`[data-multi="${n}"]`).querySelectorAll("input:checked")].map(i=>i.value);
+const slug=s=>s.toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||"item";
+$("#saveBtn").onclick=async()=>{
   const name=$("#e_name").value.trim();
   if(!name){ $("#saveMsg").textContent="Name fehlt"; $("#saveMsg").className="savemsg err"; return; }
-  const payload = {
-    name, category:$("#e_category").value||null, ampel:selAmpel(),
-    ampel_reason:val("e_ampel_reason"), trennkost_note:val("e_trennkost_note"),
-    health_note:val("e_health_note"), public_note:val("e_public_note"),
-    hay_groups:readMulti("hay_groups"), allergens:readMulti("allergens"),
-    intolerances:readMulti("intolerances"), reviewed_by_ricarda:true,
-  };
+  const a=$("#e_ampel").querySelector("button.sel");
+  const payload={name,category:$("#e_category").value||null,ampel:a?a.dataset.v:null,
+    ampel_reason:dval("e_ampel_reason"),trennkost_note:dval("e_trennkost_note"),
+    health_note:dval("e_health_note"),public_note:dval("e_public_note"),
+    hay_groups:dmulti("hay_groups"),allergens:dmulti("allergens"),intolerances:dmulti("intolerances"),
+    reviewed_by_ricarda:true};
   let res;
-  if(current.__new){
-    payload.item_id = slug(name); payload.status="draft"; payload.source="manual";
-    res = await sb.from("foods").insert(payload).select(EDIT_COLS).single();
-  }else{
-    res = await sb.from("foods").update(payload).eq("id",current.id).select(EDIT_COLS).single();
-  }
+  if(current.__new){ payload.item_id=slug(name); payload.status="draft"; payload.source="manual";
+    res=await sb.from("foods").insert(payload).select(EDIT_COLS).single(); }
+  else res=await sb.from("foods").update(payload).eq("id",current.id).select(EDIT_COLS).single();
   if(res.error){ $("#saveMsg").textContent="Fehler: "+res.error.message; $("#saveMsg").className="savemsg err"; return; }
-  // lokale Liste aktualisieren
-  const i=FOODS.findIndex(x=>x.id===res.data.id);
-  if(i>=0) FOODS[i]=res.data; else FOODS.push(res.data);
+  const i=FOODS.findIndex(x=>x.id===res.data.id); if(i>=0) FOODS[i]=res.data; else FOODS.push(res.data);
   FOODS.sort((a,b)=>a.name.localeCompare(b.name));
   $("#saveMsg").textContent="Gespeichert ✓"; $("#saveMsg").className="savemsg";
-  render(); setTimeout(()=>openDrawer(false),500);
+  render(); setTimeout(closeDrawer,500);
 };
-const val=id=>{const e=$("#"+id);return e&&e.value.trim()?e.value.trim():null;};
-const slug=s=>s.toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
-                 .replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"")||"item";
-
-$("#newBtn").onclick=()=>openEditor(null);
-function openDrawer(o){$("#drawer").classList.toggle("open",o);$("#scrim").classList.toggle("open",o);}
-$("#closeDrawer").onclick=$("#cancelBtn").onclick=$("#scrim").onclick=()=>openDrawer(false);
+function closeDrawer(){ $("#scrim").classList.remove("show"); $("#drawer").classList.remove("show"); }
+$("#newBtn").onclick=()=>openDrawer(null);
+$("#closeDrawer").onclick=$("#cancelBtn").onclick=$("#scrim").onclick=closeDrawer;
 
 init();
 </script>
