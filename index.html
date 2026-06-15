@@ -7,7 +7,7 @@
 <style>
   :root{
     --bg:#faf7f2; --card:#fff; --ink:#2c2a26; --muted:#8a8276; --line:#e8e2d8;
-    --accent:#b8893f; --gruen:#3f9d54; --gelb:#e0a92e; --rot:#cf4b3a;
+    --accent:#b8893f; --gruen:#3f9d54; --gelb:#e0a92e; --rot:#cf4b3a; --grau:#9aa0a6;
     --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
   }
   *{box-sizing:border-box}
@@ -73,7 +73,7 @@
   td.col-tags{max-width:230px}
   tr.sel td{background:#fbf3ea}
   .dot{display:inline-block;width:11px;height:11px;border-radius:50%}
-  .dot.GRUEN{background:var(--gruen)} .dot.GELB{background:var(--gelb)} .dot.ROT{background:var(--rot)}
+  .dot.GRUEN{background:var(--gruen)} .dot.GELB{background:var(--gelb)} .dot.ROT{background:var(--rot)} .dot.GRAU{background:var(--grau)}
   .dot.none{background:#d8d2c6;box-shadow:inset 0 0 0 1.5px #c3bba9}
   .reviewed{color:var(--gruen);font-weight:700} .open{color:#b9912f}
 
@@ -120,6 +120,7 @@
   .ampel-row button[data-v=GRUEN].sel{border-color:var(--gruen);color:var(--gruen)}
   .ampel-row button[data-v=GELB].sel{border-color:var(--gelb);color:var(--gelb)}
   .ampel-row button[data-v=ROT].sel{border-color:var(--rot);color:var(--rot)}
+  .ampel-row button[data-v=GRAU].sel{border-color:var(--grau);color:var(--grau)}
   .chips{display:flex;flex-wrap:wrap;gap:7px}
   .chips label{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);border-radius:999px;font-size:13px;cursor:pointer;background:#fff}
   .chips label.on{background:#f3ece0;border-color:var(--accent)}
@@ -217,8 +218,8 @@ const ALLERGENS = ["Glutenhaltiges Getreide","Weizen","Roggen","Gerste","Hafer",
   "Erdnuss","Schalenfrüchte / Nüsse","Fisch","Krebstiere","Weichtiere","Sellerie","Senf","Sesam","Sulfite","Lupine"];
 const INTOL = ["Laktoseintoleranz","Zöliakie / Gluten","Glutensensitivität / Weizensensitivität",
   "Fruktosemalabsorption","Sorbit-Unverträglichkeit","Histaminintoleranz","Soja-Unverträglichkeit","keine typische"];
-const AMPEL = [["GRUEN","🟢 Grün"],["GELB","🟡 Gelb"],["ROT","🔴 Rot"]];
-const AMPEL_ORDER = {GRUEN:1,GELB:2,ROT:3};
+const AMPEL = [["GRUEN","🟢 Grün"],["GELB","🟡 Gelb"],["ROT","🔴 Rot"],["GRAU","⚪ Grau (Rückfrage)"]];
+const AMPEL_ORDER = {GRUEN:1,GELB:2,ROT:3,GRAU:4};
 
 const HAY_COLOR = {"stärkearmes Gemüse/Salat":"green","Obst":"pink","Kohlenhydrat-Quelle":"yellow","Protein-Quelle":"red","Fett-Quelle":"orange"};
 const ALLERGEN_COLOR = {"Glutenhaltiges Getreide":"yellow","Weizen":"yellow","Roggen":"yellow","Gerste":"yellow","Hafer":"yellow",
@@ -242,8 +243,8 @@ const FILTERS = [
   {key:"hay",       label:"Hay-Gruppe",          opts:HAY,        mode:"and", field:f=>f.hay_groups||[]},
   {key:"allergens", label:"Allergene",           opts:ALLERGENS,  mode:"and", field:f=>f.allergens||[]},
   {key:"intol",     label:"Unverträglichkeiten", opts:INTOL,      mode:"and", field:f=>f.intolerances||[]},
-  {key:"ampel",     label:"Ampel",  opts:["GRUEN","GELB","ROT"],  mode:"or",
-   labels:{GRUEN:"🟢 Grün",GELB:"🟡 Gelb",ROT:"🔴 Rot"}, field:f=>f.ampel?[f.ampel]:[]},
+  {key:"ampel",     label:"Ampel",  opts:["GRUEN","GELB","ROT","GRAU"],  mode:"or",
+   labels:{GRUEN:"🟢 Grün",GELB:"🟡 Gelb",ROT:"🔴 Rot",GRAU:"⚪ Grau (Rückfrage)"}, field:f=>f.ampel?[f.ampel]:[]},
 ];
 const SEL = {category:new Set(),hay:new Set(),allergens:new Set(),intol:new Set(),ampel:new Set()};
 
