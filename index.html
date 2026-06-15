@@ -298,9 +298,17 @@ $("#logoutBtn").onclick = async ()=>{ await sb.auth.signOut(); location.reload()
 
 // ── Laden + Liste ──
 async function loadFoods(){
-  const {data,error} = await sb.from("foods").select(EDIT_COLS).order("name");
-  if(error){ alert("Fehler beim Laden: "+error.message); return; }
-  FOODS = data; render();
+  // Stapelweise laden — die Supabase-Daten-API liefert max. 1000 Zeilen pro Anfrage.
+  // So skaliert die Übersicht auf zehntausende Lebensmittel.
+  const SIZE = 1000; let all = [], from = 0;
+  while(true){
+    const {data,error} = await sb.from("foods").select(EDIT_COLS).order("name").range(from, from+SIZE-1);
+    if(error){ alert("Fehler beim Laden: "+error.message); return; }
+    all = all.concat(data);
+    if(data.length < SIZE) break;
+    from += SIZE;
+  }
+  FOODS = all; render();
 }
 function sortKey(f){
   switch(sortField){
