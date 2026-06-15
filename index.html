@@ -229,7 +229,7 @@ const FIELD_META = {
   allergens:   {label:"Allergene",            opts:ALLERGENS,  multi:true,  color:ALLERGEN_COLOR},
   intolerances:{label:"Unverträglichkeiten",  opts:INTOL,      multi:true,  color:INTOL_COLOR},
 };
-const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances";
+const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition";
 
 // ── Mehrfach-Auswahl-Filter ──
 // mode "or"  = Lebensmittel hat EINEN der gewählten Werte (Kategorie, Ampel — Einzelwert)
@@ -464,7 +464,9 @@ function openDrawer(food){
     <div class="field"><label>Gesundheitlicher Hinweis</label><textarea id="e_health_note">${esc(f.health_note||"")}</textarea></div>
     <div class="field"><label>Hinweise</label><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></div>
     <div class="field"><label>Allergene</label>${drawerChips("allergens",ALLERGENS,f.allergens)}</div>
-    <div class="field"><label>Unverträglichkeiten</label>${drawerChips("intolerances",INTOL,f.intolerances)}</div>`;
+    <div class="field"><label>Unverträglichkeiten</label>${drawerChips("intolerances",INTOL,f.intolerances)}</div>
+    <div class="field"><label>Zutaten <small style="color:var(--muted);font-weight:400">(Freitext)</small></label><textarea id="e_ingredients" placeholder="z. B. Hähnchenfleisch (60%), Paniermehl (Weizen), Pflanzenöl, Salz, Gewürze …">${esc(f.ingredients||"")}</textarea></div>
+    <div class="field"><label>Nährwerte <small style="color:var(--muted);font-weight:400">(Freitext, z. B. pro 100 g)</small></label><textarea id="e_nutrition" placeholder="z. B. Energie 250 kcal · Fett 14 g (davon ges. 3 g) · KH 18 g (Zucker 1 g) · Eiweiß 12 g · Salz 1,2 g">${esc(f.nutrition||"")}</textarea></div>`;
   $("#e_ampel").querySelectorAll("button").forEach(b=>b.onclick=()=>{$("#e_ampel").querySelectorAll("button").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");});
   $("#drawerBody").querySelectorAll(".chips label").forEach(l=>l.querySelector("input").onchange=e=>l.classList.toggle("on",e.target.checked));
   $("#scrim").classList.add("show"); $("#drawer").classList.add("show");
@@ -479,7 +481,8 @@ $("#saveBtn").onclick=async()=>{
   const payload={name,category:$("#e_category").value||null,ampel:a?a.dataset.v:null,
     ampel_reason:dval("e_ampel_reason"),trennkost_note:dval("e_trennkost_note"),
     health_note:dval("e_health_note"),public_note:dval("e_public_note"),
-    hay_groups:dmulti("hay_groups"),allergens:dmulti("allergens"),intolerances:dmulti("intolerances"),reviewed_by_ricarda:true};
+    hay_groups:dmulti("hay_groups"),allergens:dmulti("allergens"),intolerances:dmulti("intolerances"),
+    ingredients:dval("e_ingredients"),nutrition:dval("e_nutrition"),reviewed_by_ricarda:true};
   let res;
   if(current.__new){ payload.item_id=slug(name); payload.status="draft"; payload.source="manual";
     res=await sb.from("foods").insert(payload).select(EDIT_COLS).single(); }
