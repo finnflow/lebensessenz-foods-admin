@@ -111,6 +111,9 @@
   .field>label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
   .field input[type=text],.field select,.field textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff}
   .field textarea{min-height:60px;resize:vertical}
+  #photoPreview img{max-width:170px;max-height:170px;border-radius:10px;border:1px solid var(--line);object-fit:cover;display:block}
+  #photoPreview .ph{width:170px;height:120px;border:1px dashed var(--line);border-radius:10px;display:grid;place-items:center;color:var(--muted);font-size:13px}
+  .photo-actions{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
   .ampel-row{display:flex;gap:8px}
   .ampel-row button{flex:1;padding:9px;border:1px solid var(--line);border-radius:9px;background:#fff;font-weight:600;opacity:.55}
   .ampel-row button.sel{opacity:1;border-width:2px}
@@ -229,7 +232,7 @@ const FIELD_META = {
   allergens:   {label:"Allergene",            opts:ALLERGENS,  multi:true,  color:ALLERGEN_COLOR},
   intolerances:{label:"Unverträglichkeiten",  opts:INTOL,      multi:true,  color:INTOL_COLOR},
 };
-const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition";
+const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition,image_url";
 
 // ── Mehrfach-Auswahl-Filter ──
 // mode "or"  = Lebensmittel hat EINEN der gewählten Werte (Kategorie, Ampel — Einzelwert)
@@ -271,7 +274,7 @@ function updateMselBtn(flt,btn){
 }
 document.addEventListener("click",()=>document.querySelectorAll(".msel-pop.open").forEach(p=>p.classList.remove("open")));
 
-let FOODS=[], current=null, selected=new Set(), lastIdx=null, visibleRows=[], sortField="name", sortDir="asc";
+let FOODS=[], current=null, selected=new Set(), lastIdx=null, visibleRows=[], sortField="name", sortDir="asc", drawerImageUrl=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const chipsHtml=(vals,cmap)=>(vals&&vals.length)?vals.map(v=>`<span class="chip c-${cmap[v]||'gray'}">${esc(v)}</span>`).join("") : '<span class="muted">—</span>';
@@ -450,11 +453,55 @@ function drawerChips(name,opts,sel){
   return `<div class="chips" data-multi="${name}">`+opts.map(o=>{const on=(sel||[]).includes(o);
     return `<label class="${on?'on':''}"><input type="checkbox" value="${esc(o)}" ${on?'checked':''}>${esc(o)}</label>`;}).join("")+`</div>`;
 }
+// Bild clientseitig verkleinern (spart Speicher) → kleines JPEG-Blob
+async function resizeImage(file, maxDim=900, quality=0.72){
+  const img = await createImageBitmap(file);
+  let w=img.width, h=img.height;
+  if(w>h && w>maxDim){ h=Math.round(h*maxDim/w); w=maxDim; }
+  else if(h>maxDim){ w=Math.round(w*maxDim/h); h=maxDim; }
+  const cv=document.createElement("canvas"); cv.width=w; cv.height=h;
+  cv.getContext("2d").drawImage(img,0,0,w,h);
+  if(img.close) img.close();
+  return await new Promise(r=>cv.toBlob(r,"image/jpeg",quality));
+}
+function renderPhotoPreview(){
+  $("#photoPreview").innerHTML = drawerImageUrl
+    ? `<img src="${esc(drawerImageUrl)}" alt="Foto">` : `<div class="ph">kein Foto</div>`;
+}
+function setupPhoto(){
+  renderPhotoPreview();
+  const status=$("#photoStatus");
+  $("#e_photo").onchange = async (e)=>{
+    const file=e.target.files[0]; if(!file) return;
+    const id = current.item_id || slug(($("#e_name").value||"").trim());
+    if(!id){ status.textContent="Bitte zuerst den Namen eingeben."; e.target.value=""; return; }
+    try{
+      status.textContent="verkleinern…";
+      const blob=await resizeImage(file);
+      status.textContent="hochladen…";
+      const up=await sb.storage.from("food-photos").upload(id+".jpg",blob,{upsert:true,contentType:"image/jpeg"});
+      if(up.error){ status.textContent="Fehler: "+up.error.message; return; }
+      drawerImageUrl = sb.storage.from("food-photos").getPublicUrl(id+".jpg").data.publicUrl + "?v=" + Date.now();
+      renderPhotoPreview();
+      status.textContent = `✓ hochgeladen (${Math.round(blob.size/1024)} KB) — „Speichern" nicht vergessen`;
+    }catch(err){ status.textContent="Fehler beim Bild: "+err.message; }
+    finally{ e.target.value=""; }
+  };
+  $("#photoRemove").onclick=()=>{ drawerImageUrl=null; renderPhotoPreview();
+    status.textContent=`entfernt — „Speichern" nicht vergessen`; };
+}
 function openDrawer(food){
   current = food || {__new:true,status:"draft",hay_groups:[],allergens:[],intolerances:[]};
   $("#drawerTitle").textContent = food ? food.name : "Neues Lebensmittel";
-  $("#saveMsg").textContent=""; const f=current;
+  $("#saveMsg").textContent=""; const f=current; drawerImageUrl = f.image_url || null;
   $("#drawerBody").innerHTML=`
+    <div class="field"><label>Foto</label>
+      <div id="photoPreview"></div>
+      <div class="photo-actions">
+        <label class="btn" style="cursor:pointer;margin:0">Foto wählen<input type="file" id="e_photo" accept="image/*" style="display:none"></label>
+        <button type="button" class="btn ghost" id="photoRemove">Entfernen</button>
+        <span id="photoStatus" class="muted" style="font-size:12px"></span>
+      </div></div>
     <div class="field"><label>Name</label><input type="text" id="e_name" value="${esc(f.name||"")}"></div>
     <div class="field"><label>Kategorie</label><select id="e_category"><option value="">— wählen —</option>${CATEGORIES.map(c=>`<option ${f.category===c?'selected':''}>${esc(c)}</option>`).join("")}</select></div>
     <div class="field"><label>Ampel</label><div class="ampel-row" id="e_ampel">${AMPEL.map(([v,l])=>`<button type="button" data-v="${v}" class="${f.ampel===v?'sel':''}">${l}</button>`).join("")}</div></div>
@@ -469,6 +516,7 @@ function openDrawer(food){
     <div class="field"><label>Nährwerte <small style="color:var(--muted);font-weight:400">(Freitext, z. B. pro 100 g)</small></label><textarea id="e_nutrition" placeholder="z. B. Energie 250 kcal · Fett 14 g (davon ges. 3 g) · KH 18 g (Zucker 1 g) · Eiweiß 12 g · Salz 1,2 g">${esc(f.nutrition||"")}</textarea></div>`;
   $("#e_ampel").querySelectorAll("button").forEach(b=>b.onclick=()=>{$("#e_ampel").querySelectorAll("button").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");});
   $("#drawerBody").querySelectorAll(".chips label").forEach(l=>l.querySelector("input").onchange=e=>l.classList.toggle("on",e.target.checked));
+  setupPhoto();
   $("#scrim").classList.add("show"); $("#drawer").classList.add("show");
 }
 const dval=id=>{const e=$("#"+id);return e&&e.value.trim()?e.value.trim():null;};
@@ -482,7 +530,7 @@ $("#saveBtn").onclick=async()=>{
     ampel_reason:dval("e_ampel_reason"),trennkost_note:dval("e_trennkost_note"),
     health_note:dval("e_health_note"),public_note:dval("e_public_note"),
     hay_groups:dmulti("hay_groups"),allergens:dmulti("allergens"),intolerances:dmulti("intolerances"),
-    ingredients:dval("e_ingredients"),nutrition:dval("e_nutrition"),reviewed_by_ricarda:true};
+    ingredients:dval("e_ingredients"),nutrition:dval("e_nutrition"),image_url:drawerImageUrl,reviewed_by_ricarda:true};
   let res;
   if(current.__new){ payload.item_id=slug(name); payload.status="draft"; payload.source="manual";
     res=await sb.from("foods").insert(payload).select(EDIT_COLS).single(); }
