@@ -171,10 +171,11 @@
   <div class="bulkbar" id="bulkbar">
     <span id="bulkCount"></span>
     <button class="btn ghost" id="deselectBtn">Abwählen</button>
+    <button class="btn" id="confirmBtn">✓ Ausgewählte bestätigen</button>
     <button class="btn danger" id="deleteBtn">🗑 Ausgewählte löschen</button>
   </div>
 
-  <div class="hint-bar">💡 Zelle anklicken zum Ändern (Kategorie · Vegan · Hay-Gruppe · Ampel · Allergene · Unverträglichkeiten). Name anklicken = alle Details. Spalten-Überschrift anklicken = sortieren. Box links = auswählen (mit ⇧ mehrere).</div>
+  <div class="hint-bar">💡 Zelle anklicken zum Ändern (Kategorie · Vegan · Hay-Gruppe · Ampel · Allergene · Unverträglichkeiten). „Geprüft" anklicken = bestätigt ↔ offen. Ändern bestätigt NICHT automatisch. Name anklicken = alle Details. Spalten-Überschrift anklicken = sortieren. Box links = auswählen (mit ⇧ mehrere; dann oben „✓ bestätigen").</div>
 
   <div class="wrap">
     <table>
@@ -367,7 +368,7 @@ function render(){
       <td class="editable col-tags" data-field="hay_groups">${chipsHtml(f.hay_groups,HAY_COLOR)}</td>
       <td class="editable col-tags" data-field="allergens">${chipsHtml(f.allergens,ALLERGEN_COLOR)}</td>
       <td class="editable col-tags" data-field="intolerances">${chipsHtml(f.intolerances,INTOL_COLOR)}</td>
-      <td>${f.reviewed_by_ricarda?'<span class="reviewed">✓</span>':'<span class="open">offen</span>'}</td>`;
+      <td class="editable" data-field="reviewed" title="Klicken: bestätigt ↔ offen">${f.reviewed_by_ricarda?'<span class="reviewed">✓</span>':'<span class="open">offen</span>'}</td>`;
     tr.querySelector(".rowcb").onclick=e=>{ e.stopPropagation(); toggleRow(e,idx); };
     tr.querySelector(".namecell").onclick=()=>openDrawer(f);
     tr.querySelectorAll(".editable").forEach(td=>td.onclick=e=>{e.stopPropagation();openCellEditor(f,td.dataset.field,td);});
@@ -401,6 +402,13 @@ $("#selAll").onclick=()=>{
   lastIdx=null; render();
 };
 $("#deselectBtn").onclick=()=>{ selected.clear(); lastIdx=null; render(); };
+$("#confirmBtn").onclick=async()=>{
+  const ids=[...selected]; if(!ids.length) return;
+  const {error}=await sb.from("foods").update({reviewed_by_ricarda:true}).in("id",ids);
+  if(error){ alert("Fehler beim Bestätigen: "+error.message); return; }
+  FOODS.forEach(f=>{ if(selected.has(f.id)) f.reviewed_by_ricarda=true; });
+  render();
+};
 $("#deleteBtn").onclick=async()=>{
   const ids=[...selected]; if(!ids.length) return;
   const names=visibleRows.filter(f=>selected.has(f.id)).map(f=>f.name).slice(0,5).join(", ");
@@ -424,6 +432,7 @@ function closePop(){ pop.classList.remove("open"); }
 document.addEventListener("click",e=>{ if(pop.classList.contains("open") && !pop.contains(e.target) && !e.target.closest(".editable")) closePop(); });
 window.addEventListener("scroll",closePop,true);
 function openCellEditor(food,field,cell){
+  if(field==="reviewed") return toggleReviewed(food);
   if(field==="ampel") return openAmpelEditor(food,cell);
   const meta=FIELD_META[field]; let html=`<div class="pop-head">${meta.label}</div>`;
   if(!meta.multi){
@@ -451,10 +460,18 @@ function showPop(html,cell){
   pop.classList.add("open");
 }
 async function saveField(food,field,value){
-  const res=await sb.from("foods").update({[field]:value, reviewed_by_ricarda:true}).eq("id",food.id).select(EDIT_COLS).single();
+  // Ändern bestätigt NICHT automatisch — Bestätigen ist ein eigener, bewusster Schritt (Geprüft-Spalte / Bulk-Knopf).
+  const res=await sb.from("foods").update({[field]:value}).eq("id",food.id).select(EDIT_COLS).single();
   if(res.error){ alert("Fehler: "+res.error.message); return; }
   const i=FOODS.findIndex(x=>x.id===food.id); if(i>=0) FOODS[i]=res.data;
   closePop(); render();
+}
+// Geprüft umschalten (bestätigt ↔ offen) — eigener Klick auf die Geprüft-Zelle
+async function toggleReviewed(food){
+  const res=await sb.from("foods").update({reviewed_by_ricarda:!food.reviewed_by_ricarda}).eq("id",food.id).select(EDIT_COLS).single();
+  if(res.error){ alert("Fehler: "+res.error.message); return; }
+  const i=FOODS.findIndex(x=>x.id===food.id); if(i>=0) FOODS[i]=res.data;
+  render();
 }
 
 // ── Schublade ──
@@ -540,7 +557,7 @@ $("#saveBtn").onclick=async()=>{
     ampel_reason:dval("e_ampel_reason"),trennkost_note:dval("e_trennkost_note"),
     health_note:dval("e_health_note"),public_note:dval("e_public_note"),
     hay_groups:dmulti("hay_groups"),allergens:dmulti("allergens"),intolerances:dmulti("intolerances"),
-    ingredients:dval("e_ingredients"),nutrition:dval("e_nutrition"),image_url:drawerImageUrl,reviewed_by_ricarda:true};
+    ingredients:dval("e_ingredients"),nutrition:dval("e_nutrition"),image_url:drawerImageUrl};
   let res;
   if(current.__new){ payload.item_id=slug(name); payload.status="draft"; payload.source="manual";
     res=await sb.from("foods").insert(payload).select(EDIT_COLS).single(); }
