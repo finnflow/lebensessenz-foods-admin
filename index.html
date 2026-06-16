@@ -175,7 +175,7 @@
     <button class="btn danger" id="deleteBtn">🗑 Ausgewählte löschen</button>
   </div>
 
-  <div class="hint-bar">💡 Zelle anklicken zum Ändern (Kategorie · Vegan · Hay-Gruppe · Ampel · Allergene · Unverträglichkeiten). „Geprüft" anklicken = bestätigt ↔ offen. Ändern bestätigt NICHT automatisch. Name anklicken = alle Details. Spalten-Überschrift anklicken = sortieren. Box links = auswählen (mit ⇧ mehrere; dann oben „✓ bestätigen").</div>
+  <div class="hint-bar">💡 Zelle anklicken zum Ändern (Kategorie · Vegan · Hay-Gruppe · Ampel · Allergene · Unverträglichkeiten). „Geprüft" anklicken = bestätigt ↔ offen (Hay-Gruppe setzen = automatisch abgesegnet → geht live). Name anklicken = alle Details. Spalten-Überschrift anklicken = sortieren. Box links = auswählen (mit ⇧ mehrere; dann oben „✓ bestätigen").</div>
 
   <div class="wrap">
     <table>
@@ -460,8 +460,8 @@ function showPop(html,cell){
   pop.classList.add("open");
 }
 async function saveField(food,field,value){
-  // Ändern bestätigt NICHT automatisch — Bestätigen ist ein eigener, bewusster Schritt (Geprüft-Spalte / Bulk-Knopf).
-  const res=await sb.from("foods").update({[field]:value}).eq("id",food.id).select(EDIT_COLS).single();
+  // Ändern bestätigt automatisch (= abgesegnet); der Geprüft-Haken bleibt zusätzlich manuell umschaltbar.
+  const res=await sb.from("foods").update({[field]:value, reviewed_by_ricarda:true}).eq("id",food.id).select(EDIT_COLS).single();
   if(res.error){ alert("Fehler: "+res.error.message); return; }
   const i=FOODS.findIndex(x=>x.id===food.id); if(i>=0) FOODS[i]=res.data;
   closePop(); render();
@@ -557,7 +557,7 @@ $("#saveBtn").onclick=async()=>{
     ampel_reason:dval("e_ampel_reason"),trennkost_note:dval("e_trennkost_note"),
     health_note:dval("e_health_note"),public_note:dval("e_public_note"),
     hay_groups:dmulti("hay_groups"),allergens:dmulti("allergens"),intolerances:dmulti("intolerances"),
-    ingredients:dval("e_ingredients"),nutrition:dval("e_nutrition"),image_url:drawerImageUrl};
+    ingredients:dval("e_ingredients"),nutrition:dval("e_nutrition"),image_url:drawerImageUrl,reviewed_by_ricarda:true};
   let res;
   if(current.__new){ payload.item_id=slug(name); payload.status="draft"; payload.source="manual";
     res=await sb.from("foods").insert(payload).select(EDIT_COLS).single(); }
