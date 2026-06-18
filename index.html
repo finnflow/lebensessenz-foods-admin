@@ -76,6 +76,7 @@
   .dot.GRUEN{background:var(--gruen)} .dot.GELB{background:var(--gelb)} .dot.ROT{background:var(--rot)} .dot.GRAU{background:var(--grau)}
   .dot.none{background:#d8d2c6;box-shadow:inset 0 0 0 1.5px #c3bba9}
   .reviewed{color:var(--gruen);font-weight:700} .open{color:#b9912f}
+  .hay-konform{ text-align:center; width:26px; font-size:14px; }
 
   /* Farb-Chips */
   .chip{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;line-height:1.55;margin:1px 2px 1px 0;white-space:nowrap}
@@ -186,6 +187,7 @@
         <th class="sortable" data-sort="category">Kategorie<span class="arr"></span></th>
         <th class="sortable" data-sort="vegan">Vegan<span class="arr"></span></th>
         <th class="sortable" data-sort="hay_groups">Hay-Gruppe<span class="arr"></span></th>
+        <th class="hay-konform" title="Hay-Konformität: ✅ konform · ⚠️ bedingt · ❌ nicht konform">🚦</th>
         <th class="sortable" data-sort="allergens">Allergene<span class="arr"></span></th>
         <th class="sortable" data-sort="intolerances">Unverträglichkeiten<span class="arr"></span></th>
         <th class="sortable" data-sort="reviewed">Geprüft<span class="arr"></span></th>
@@ -287,6 +289,19 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const chipsHtml=(vals,cmap)=>(vals&&vals.length)?vals.map(v=>`<span class="chip c-${cmap[v]||'gray'}">${esc(v)}</span>`).join("") : '<span class="muted">—</span>';
 
+// Hay-Konformität als reine Funktion von hay_groups (✅ konform / ⚠️ bedingt / ❌ nicht konform)
+function hayKonform(groups){
+  const G = new Set((groups||[]).filter(g => g !== "unklar"));
+  if(!G.size) return null;
+  const carb  = G.has("Kohlenhydrat-Quelle") || G.has("Hülsenfrüchte");
+  const prot  = G.has("Protein-Quelle");
+  const fruit = G.has("Obst");
+  if(carb && prot)  return {sym:"❌", t:"nicht konform – Stärke + Eiweiß"};
+  if(fruit && prot) return {sym:"❌", t:"nicht konform – Obst + Eiweiß"};
+  if(fruit && carb) return {sym:"⚠️", t:"bedingt – Obst + Stärke"};
+  return {sym:"✅", t:"konform"};
+}
+
 // ── Auth ──
 async function init(){
   const {data:{session}} = await sb.auth.getSession();
@@ -359,6 +374,7 @@ function render(){
   list.forEach((f,idx)=>{
     const tr=document.createElement("tr");
     if(selected.has(f.id)) tr.classList.add("sel");
+    const hk = hayKonform(f.hay_groups);
     tr.innerHTML = `
       <td class="cbcol"><input type="checkbox" class="rowcb" ${selected.has(f.id)?"checked":""}></td>
       <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}</td>
@@ -366,6 +382,7 @@ function render(){
       <td class="editable" data-field="category">${f.category?esc(f.category):'<span class="muted">—</span>'}</td>
       <td class="editable" data-field="vegan">${f.vegan?`<span class="chip c-${VEGAN_COLOR[f.vegan]||'gray'}">${esc(f.vegan)}</span>`:'<span class="muted">—</span>'}</td>
       <td class="editable col-tags" data-field="hay_groups">${chipsHtml(f.hay_groups,HAY_COLOR)}</td>
+      <td class="hay-konform" title="${hk?esc(hk.t):''}">${hk?hk.sym:''}</td>
       <td class="editable col-tags" data-field="allergens">${chipsHtml(f.allergens,ALLERGEN_COLOR)}</td>
       <td class="editable col-tags" data-field="intolerances">${chipsHtml(f.intolerances,INTOL_COLOR)}</td>
       <td class="editable" data-field="reviewed" title="Klicken: bestätigt ↔ offen">${f.reviewed_by_ricarda?'<span class="reviewed">✓</span>':'<span class="open">offen</span>'}</td>`;
