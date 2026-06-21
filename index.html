@@ -177,7 +177,7 @@
     <button class="btn danger" id="deleteBtn">🗑 Ausgewählte löschen</button>
   </div>
 
-  <div class="hint-bar">💡 Zelle anklicken zum Ändern (Kategorie · Vegan · Hay-Gruppe · Ampel · Allergene · Unverträglichkeiten). „Geprüft" anklicken = bestätigt ↔ offen (Hay-Gruppe setzen = automatisch abgesegnet → geht live). Name anklicken = alle Details. Spalten-Überschrift anklicken = sortieren. Box links = auswählen (mit ⇧ mehrere; dann oben „✓ bestätigen").</div>
+  <div class="hint-bar">💡 Zelle anklicken zum Ändern (Kategorie · Vegan · Trennkost-Gruppe · Ampel · Allergene · Unverträglichkeiten). „Geprüft" anklicken = bestätigt ↔ offen (Trennkost-Gruppe setzen = automatisch abgesegnet → geht live). Name anklicken = alle Details. Spalten-Überschrift anklicken = sortieren. Box links = auswählen (mit ⇧ mehrere; dann oben „✓ bestätigen").</div>
 
   <div class="wrap">
     <table>
@@ -187,8 +187,8 @@
         <th class="sortable" data-sort="name">Name<span class="arr"></span></th>
         <th class="sortable" data-sort="category">Kategorie<span class="arr"></span></th>
         <th class="sortable" data-sort="vegan">Vegan<span class="arr"></span></th>
-        <th class="sortable" data-sort="hay_groups">Hay-Gruppe<span class="arr"></span></th>
-        <th class="hay-konform sortable" data-sort="hay_konform" title="Hay-Konformität: ✅ konform · ⚠️ bedingt · ❌ nicht konform">🚦<span class="arr"></span></th>
+        <th class="sortable" data-sort="hay_groups">Trennkost-Gruppe<span class="arr"></span></th>
+        <th class="hay-konform sortable" data-sort="hay_konform" title="Trennkost-Ampel: ✅ konform · ⚠️ bedingt · ❌ nicht konform">🚦<span class="arr"></span></th>
         <th class="sortable" data-sort="allergens">Allergene<span class="arr"></span></th>
         <th class="sortable" data-sort="intolerances">Unverträglichkeiten<span class="arr"></span></th>
         <th class="sortable" data-sort="reviewed">Geprüft<span class="arr"></span></th>
@@ -238,7 +238,7 @@ const INTOL_COLOR = {"Laktoseintoleranz":"blue","Zöliakie / Gluten":"yellow","G
 const FIELD_META = {
   category:    {label:"Kategorie",            opts:CATEGORIES, multi:false},
   vegan:       {label:"Vegan/tierisch",       opts:VEGAN,      multi:false},
-  hay_groups:  {label:"Hay-Trennkost Gruppe", opts:HAY,        multi:true,  color:HAY_COLOR},
+  hay_groups:  {label:"Trennkost-Gruppe", opts:HAY,        multi:true,  color:HAY_COLOR},
   allergens:   {label:"Allergene",            opts:ALLERGENS,  multi:true,  color:ALLERGEN_COLOR},
   intolerances:{label:"Unverträglichkeiten",  opts:INTOL,      multi:true,  color:INTOL_COLOR},
 };
@@ -250,8 +250,8 @@ const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,ve
 const FILTERS = [
   {key:"category",  label:"Kategorie",           opts:CATEGORIES, mode:"or",  field:f=>f.category?[f.category]:[]},
   {key:"vegan",     label:"Vegan/tierisch",      opts:VEGAN,      mode:"or",  field:f=>f.vegan?[f.vegan]:[]},
-  {key:"hay",       label:"Hay-Gruppe",          opts:HAY,        mode:"and", field:f=>f.hay_groups||[]},
-  {key:"haykonform", label:"Hay-Ampel", opts:["konform","bedingt konform","nicht konform","unbewertet"], mode:"or",
+  {key:"hay",       label:"Trennkost-Gruppe",          opts:HAY,        mode:"and", field:f=>f.hay_groups||[]},
+  {key:"haykonform", label:"Trennkost-Ampel", opts:["konform","bedingt konform","nicht konform","unbewertet"], mode:"or",
    labels:{"konform":"✅ konform","bedingt konform":"⚠️ bedingt konform","nicht konform":"❌ nicht konform","unbewertet":"– noch offen"},
    field:f=>{const hk=hayKonform(f.hay_groups); return [hk?({"✅":"konform","⚠️":"bedingt konform","❌":"nicht konform"}[hk.sym]):"unbewertet"];}},
   {key:"allergens", label:"Allergene",           opts:ALLERGENS,  mode:"and", field:f=>f.allergens||[]},
@@ -555,7 +555,7 @@ function openDrawer(food){
     <div class="field"><label>Vegan / vegetarisch / tierisch</label><select id="e_vegan"><option value="">— wählen —</option>${VEGAN.map(v=>`<option ${f.vegan===v?'selected':''}>${esc(v)}</option>`).join("")}</select></div>
     <div class="field"><label>Ampel</label><div class="ampel-row" id="e_ampel">${AMPEL.map(([v,l])=>`<button type="button" data-v="${v}" class="${f.ampel===v?'sel':''}">${l}</button>`).join("")}</div></div>
     <div class="field"><label>Ampel-Begründung</label><textarea id="e_ampel_reason">${esc(f.ampel_reason||"")}</textarea></div>
-    <div class="field"><label>Hay-Trennkost Hauptgruppe</label>${drawerChips("hay_groups",HAY,f.hay_groups)}</div>
+    <div class="field"><label>Trennkost-Hauptgruppe</label>${drawerChips("hay_groups",HAY,f.hay_groups)}</div>
     <div class="field"><label>Trennkost-Hinweis</label><textarea id="e_trennkost_note">${esc(f.trennkost_note||"")}</textarea></div>
     <div class="field"><label>Gesundheitlicher Hinweis</label><textarea id="e_health_note">${esc(f.health_note||"")}</textarea></div>
     <div class="field"><label>Hinweise</label><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></div>
