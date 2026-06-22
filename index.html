@@ -156,6 +156,7 @@
     <div class="msel" data-key="ampel"></div>
     <div class="msel" data-key="category"></div>
     <div class="msel" data-key="vegan"></div>
+    <div class="msel" data-key="nachhaltigkeit"></div>
     <div class="msel" data-key="hay"></div>
     <div class="msel" data-key="haykonform"></div>
     <div class="msel" data-key="allergens"></div>
@@ -187,6 +188,7 @@
         <th class="sortable" data-sort="name">Name<span class="arr"></span></th>
         <th class="sortable" data-sort="category">Kategorie<span class="arr"></span></th>
         <th class="sortable" data-sort="vegan">Vegan<span class="arr"></span></th>
+        <th class="sortable" data-sort="nachhaltigkeit">Nachhaltigkeit<span class="arr"></span></th>
         <th class="sortable" data-sort="hay_groups">Trennkost-Gruppe<span class="arr"></span></th>
         <th class="hay-konform sortable" data-sort="hay_konform" title="Trennkost-Ampel: ✅ konform · ⚠️ bedingt · ❌ nicht konform">🚦<span class="arr"></span></th>
         <th class="sortable" data-sort="allergens">Allergene<span class="arr"></span></th>
@@ -230,6 +232,10 @@ const AMPEL_ORDER = {GRUEN:1,GELB:2,ROT:3,GRAU:4};
 
 const HAY_COLOR = {"stärkearmes Gemüse/neutral":"green","Obst":"pink","Kohlenhydrat-Quelle":"yellow","Protein-Quelle":"red","Fett-Quelle":"orange","Hülsenfrüchte":"purple","unklar":"gray"};
 const VEGAN_COLOR = {"vegan":"green","vegetarisch":"yellow","tierisch":"brown"};
+const NACHH = ["regional","saisonal","plastikarm","bio"];
+const NACHH_ICON = {"regional":"🏡","saisonal":"🗓️","plastikarm":"📦","bio":"🌱"};
+const NACHH_LABEL = {"regional":"🏡 regional","saisonal":"🗓️ saisonal","plastikarm":"📦 plastikarm/Verpackung","bio":"🌱 Bio/Öko"};
+const NACHH_COLOR = {"regional":"green","saisonal":"orange","plastikarm":"blue","bio":"green"};
 const ALLERGEN_COLOR = {"Glutenhaltiges Getreide":"yellow","Weizen":"yellow","Roggen":"yellow","Gerste":"yellow","Hafer":"yellow",
   "Milch":"blue","Laktose":"blue","Ei":"yellow","Soja":"green","Erdnuss":"brown","Schalenfrüchte / Nüsse":"brown","Fisch":"blue",
   "Krebstiere":"pink","Weichtiere":"pink","Sellerie":"green","Senf":"yellow","Sesam":"orange","Sulfite":"gray","Lupine":"green"};
@@ -241,8 +247,9 @@ const FIELD_META = {
   hay_groups:  {label:"Trennkost-Gruppe", opts:HAY,        multi:true,  color:HAY_COLOR},
   allergens:   {label:"Allergene",            opts:ALLERGENS,  multi:true,  color:ALLERGEN_COLOR},
   intolerances:{label:"Unverträglichkeiten",  opts:INTOL,      multi:true,  color:INTOL_COLOR},
+  nachhaltigkeit:{label:"Nachhaltigkeit",      opts:NACHH,      multi:true,  color:NACHH_COLOR},
 };
-const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition,image_url";
+const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition,image_url,nachhaltigkeit";
 
 // ── Mehrfach-Auswahl-Filter ──
 // mode "or"  = Lebensmittel hat EINEN der gewählten Werte (Kategorie, Ampel — Einzelwert)
@@ -256,10 +263,11 @@ const FILTERS = [
    field:f=>{const hk=hayKonform(f.hay_groups); return [hk?({"✅":"konform","⚠️":"bedingt konform","❌":"nicht konform"}[hk.sym]):"unbewertet"];}},
   {key:"allergens", label:"Allergene",           opts:ALLERGENS,  mode:"and", field:f=>f.allergens||[]},
   {key:"intol",     label:"Unverträglichkeiten", opts:INTOL,      mode:"and", field:f=>f.intolerances||[]},
+  {key:"nachhaltigkeit", label:"Nachhaltigkeit", opts:NACHH, mode:"and", labels:NACHH_LABEL, field:f=>f.nachhaltigkeit||[]},
   {key:"ampel",     label:"Ampel",  opts:["GRUEN","GELB","ROT","GRAU"],  mode:"or",
    labels:{GRUEN:"🟢 Grün",GELB:"🟡 Gelb",ROT:"🔴 Rot",GRAU:"⚪ Grau (Rückfrage)"}, field:f=>f.ampel?[f.ampel]:[]},
 ];
-const SEL = {category:new Set(),vegan:new Set(),haykonform:new Set(),hay:new Set(),allergens:new Set(),intol:new Set(),ampel:new Set()};
+const SEL = {category:new Set(),vegan:new Set(),haykonform:new Set(),hay:new Set(),allergens:new Set(),intol:new Set(),nachhaltigkeit:new Set(),ampel:new Set()};
 
 function buildFilters(){
   for(const flt of FILTERS){
@@ -345,6 +353,7 @@ function sortKey(f){
     case "ampel": return AMPEL_ORDER[f.ampel]||0;
     case "category": return (f.category||"").toLowerCase();
     case "vegan": return (f.vegan||"").toLowerCase();
+    case "nachhaltigkeit": return (f.nachhaltigkeit||[]).join(",").toLowerCase();
     case "hay_groups": return (f.hay_groups||[]).join(",").toLowerCase();
     case "hay_konform": { const hk=hayKonform(f.hay_groups); return hk?({"✅":1,"⚠️":2,"❌":3}[hk.sym]||0):0; }
     case "allergens": return (f.allergens||[]).join(",").toLowerCase();
@@ -386,6 +395,7 @@ function render(){
       <td class="namecell"><b>${esc(f.name)}</b></td>
       <td class="editable" data-field="category">${f.category?esc(f.category):'<span class="muted">—</span>'}</td>
       <td class="editable" data-field="vegan">${f.vegan?`<span class="chip c-${VEGAN_COLOR[f.vegan]||'gray'}">${esc(f.vegan)}</span>`:'<span class="muted">—</span>'}</td>
+      <td class="editable" data-field="nachhaltigkeit" title="Nachhaltigkeit">${(f.nachhaltigkeit&&f.nachhaltigkeit.length)?f.nachhaltigkeit.map(v=>`<span title="${esc(NACHH_LABEL[v]||v)}">${NACHH_ICON[v]||''}</span>`).join(" "):'<span class="muted">—</span>'}</td>
       <td class="editable col-tags" data-field="hay_groups">${chipsHtml(f.hay_groups,HAY_COLOR)}</td>
       <td class="hay-konform" title="${hk?esc(hk.t):''}">${hk?hk.sym:''}</td>
       <td class="editable col-tags" data-field="allergens">${chipsHtml(f.allergens,ALLERGEN_COLOR)}</td>
@@ -539,7 +549,7 @@ function setupPhoto(){
     status.textContent=`entfernt — „Speichern" nicht vergessen`; };
 }
 function openDrawer(food){
-  current = food || {__new:true,status:"draft",hay_groups:[],allergens:[],intolerances:[]};
+  current = food || {__new:true,status:"draft",hay_groups:[],allergens:[],intolerances:[],nachhaltigkeit:[]};
   $("#drawerTitle").textContent = food ? food.name : "Neues Lebensmittel";
   $("#saveMsg").textContent=""; const f=current; drawerImageUrl = f.image_url || null;
   $("#drawerBody").innerHTML=`
@@ -561,6 +571,7 @@ function openDrawer(food){
     <div class="field"><label>Hinweise</label><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></div>
     <div class="field"><label>Allergene</label>${drawerChips("allergens",ALLERGENS,f.allergens)}</div>
     <div class="field"><label>Unverträglichkeiten</label>${drawerChips("intolerances",INTOL,f.intolerances)}</div>
+    <div class="field"><label>Nachhaltigkeit <small style="color:var(--muted);font-weight:400">(🏡 regional · 🗓️ saisonal · 📦 plastikarm · 🌱 Bio/Öko — getrennt von der Ampel)</small></label>${drawerChips("nachhaltigkeit",NACHH,f.nachhaltigkeit)}</div>
     <div class="field"><label>Zutaten <small style="color:var(--muted);font-weight:400">(Freitext)</small></label><textarea id="e_ingredients" placeholder="z. B. Hähnchenfleisch (60%), Paniermehl (Weizen), Pflanzenöl, Salz, Gewürze …">${esc(f.ingredients||"")}</textarea></div>
     <div class="field"><label>Nährwerte <small style="color:var(--muted);font-weight:400">(Freitext, z. B. pro 100 g)</small></label><textarea id="e_nutrition" placeholder="z. B. Energie 250 kcal · Fett 14 g (davon ges. 3 g) · KH 18 g (Zucker 1 g) · Eiweiß 12 g · Salz 1,2 g">${esc(f.nutrition||"")}</textarea></div>`;
   $("#e_ampel").querySelectorAll("button").forEach(b=>b.onclick=()=>{$("#e_ampel").querySelectorAll("button").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");});
@@ -578,7 +589,7 @@ $("#saveBtn").onclick=async()=>{
   const payload={name,category:$("#e_category").value||null,vegan:$("#e_vegan").value||null,ampel:a?a.dataset.v:null,
     ampel_reason:dval("e_ampel_reason"),trennkost_note:dval("e_trennkost_note"),
     health_note:dval("e_health_note"),public_note:dval("e_public_note"),
-    hay_groups:dmulti("hay_groups"),allergens:dmulti("allergens"),intolerances:dmulti("intolerances"),
+    hay_groups:dmulti("hay_groups"),allergens:dmulti("allergens"),intolerances:dmulti("intolerances"),nachhaltigkeit:dmulti("nachhaltigkeit"),
     ingredients:dval("e_ingredients"),nutrition:dval("e_nutrition"),image_url:drawerImageUrl,reviewed_by_ricarda:true};
   let res;
   if(current.__new){ payload.item_id=slug(name); payload.status="draft"; payload.source="manual";
