@@ -67,7 +67,9 @@
   .cbcol{width:36px;text-align:center;padding-left:8px;padding-right:8px}
   .cbcol input{width:16px;height:16px;cursor:pointer;accent-color:var(--accent)}
   td.namecell{cursor:pointer;white-space:normal;word-break:break-word}
-  td.namecell:hover{text-decoration:underline}
+  td.namecell:hover b{text-decoration:underline}
+  td.namecell .rowthumb{display:block;margin-top:5px;width:60px;height:60px;object-fit:contain;
+    background:#fff;border:1px solid var(--line);border-radius:8px;padding:2px}
   td.editable{cursor:pointer}
   td.editable:hover{background:#f3ece0;box-shadow:inset 0 0 0 1px var(--line)}
   td.col-tags{max-width:200px;word-break:break-word}
@@ -397,7 +399,7 @@ function render(){
     tr.innerHTML = `
       <td class="cbcol"><input type="checkbox" class="rowcb" ${selected.has(f.id)?"checked":""}></td>
       <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}</td>
-      <td class="namecell"><b>${esc(f.name)}</b></td>
+      <td class="namecell"><b>${esc(f.name)}</b>${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
       <td>${f.brand?esc(f.brand):'<span class="muted">—</span>'}</td>
       <td class="editable" data-field="category">${f.category?esc(f.category):'<span class="muted">—</span>'}</td>
       <td class="editable" data-field="vegan">${f.vegan?`<span class="chip c-${VEGAN_COLOR[f.vegan]||'gray'}">${esc(f.vegan)}</span>`:'<span class="muted">—</span>'}</td>
