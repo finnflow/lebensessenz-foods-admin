@@ -159,6 +159,7 @@
     <div class="msel" data-key="brand"></div>
     <div class="msel" data-key="category"></div>
     <div class="msel" data-key="gluten"></div>
+    <div class="msel" data-key="freivon"></div>
     <div class="msel" data-key="vegan"></div>
     <div class="msel" data-key="nachhaltigkeit"></div>
     <div class="msel" data-key="hay"></div>
@@ -264,6 +265,8 @@ const FILTERS = [
   {key:"brand",     label:"Marke",               opts:[],         mode:"or",  field:f=>f.brand?[f.brand]:[]},
   {key:"gluten",    label:"Gluten",              opts:["glutenfrei","kann Spuren von Gluten","enthält Gluten","keine Angabe"], mode:"or",
    labels:{"glutenfrei":"✅ glutenfrei","kann Spuren von Gluten":"⚠️ kann Spuren von Gluten","enthält Gluten":"🌾 enthält Gluten","keine Angabe":"❓ keine Angabe"}, field:f=>[glutenStatus(f)]},
+  {key:"freivon",   label:"Frei von",            opts:["Laktose","Soja","Nüsse/Erdnuss","Ei","Sesam"], mode:"and",
+   labels:{"Laktose":"🥛 Laktose","Soja":"🌱 Soja","Nüsse/Erdnuss":"🥜 Nüsse/Erdnuss","Ei":"🥚 Ei","Sesam":"Sesam"}, field:f=>freeOfSet(f)},
   {key:"vegan",     label:"Vegan/tierisch",      opts:VEGAN,      mode:"or",  field:f=>f.vegan?[f.vegan]:[]},
   {key:"hay",       label:"Trennkost-Gruppe",          opts:HAY,        mode:"and", field:f=>f.hay_groups||[]},
   {key:"haykonform", label:"Trennkost-Ampel", opts:["konform","bedingt konform","nicht konform","unbewertet"], mode:"or",
@@ -275,7 +278,7 @@ const FILTERS = [
   {key:"ampel",     label:"Ampel",  opts:["GRUEN","GELB","ROT","GRAU"],  mode:"or",
    labels:{GRUEN:"🟢 Grün",GELB:"🟡 Gelb",ROT:"🔴 Rot",GRAU:"⚪ Grau (Rückfrage)"}, field:f=>f.ampel?[f.ampel]:[]},
 ];
-const SEL = {category:new Set(),gluten:new Set(),brand:new Set(),vegan:new Set(),haykonform:new Set(),hay:new Set(),allergens:new Set(),intol:new Set(),nachhaltigkeit:new Set(),ampel:new Set()};
+const SEL = {category:new Set(),gluten:new Set(),freivon:new Set(),brand:new Set(),vegan:new Set(),haykonform:new Set(),hay:new Set(),allergens:new Set(),intol:new Set(),nachhaltigkeit:new Set(),ampel:new Set()};
 
 function buildFilters(){
   for(const flt of FILTERS){
@@ -332,6 +335,25 @@ function glutenStatus(f){
   const txt = ((f.public_note||"")+" "+(f.ingredients||"")).toLowerCase();
   if(/kann spuren[^.]*?(gluten|weizen|roggen|gerste|dinkel|kamut|grünkern)/.test(txt)) return "kann Spuren von Gluten";
   return (txt.includes("glutenfrei") || al.length) ? "glutenfrei" : "keine Angabe";
+}
+
+// "Frei von …" — kombinierter Filter: liefert die Allergene, von denen ein Produkt SICHER frei ist
+const FREI_VON = [
+  {key:"Laktose",       allerg:["Milch","Laktose"],                 intol:["Laktoseintoleranz"], label:/laktosefrei|lactosefrei/},
+  {key:"Soja",          allerg:["Soja"],                            intol:["Soja-Unverträglichkeit"], label:/sojafrei/},
+  {key:"Nüsse/Erdnuss", allerg:["Schalenfrüchte / Nüsse","Erdnuss"], intol:[], label:/nussfrei/},
+  {key:"Ei",            allerg:["Ei"],                              intol:[], label:/eifrei|ohne ei\b/},
+  {key:"Sesam",         allerg:["Sesam"],                           intol:[], label:/sesamfrei/},
+];
+function freeOfSet(f){
+  const al=f.allergens||[], it=f.intolerances||[];
+  const txt=((f.public_note||"")+" "+(f.ingredients||"")).toLowerCase();
+  const out=[];
+  for(const x of FREI_VON){
+    if(al.some(a=>x.allerg.includes(a)) || it.some(i=>x.intol.includes(i))) continue;
+    if(al.length || x.label.test(txt)) out.push(x.key);
+  }
+  return out;
 }
 
 // ── Auth ──
