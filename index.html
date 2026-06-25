@@ -158,6 +158,7 @@
     <div class="msel" data-key="ampel"></div>
     <div class="msel" data-key="brand"></div>
     <div class="msel" data-key="category"></div>
+    <div class="msel" data-key="gluten"></div>
     <div class="msel" data-key="vegan"></div>
     <div class="msel" data-key="nachhaltigkeit"></div>
     <div class="msel" data-key="hay"></div>
@@ -261,6 +262,8 @@ const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,ve
 const FILTERS = [
   {key:"category",  label:"Kategorie",           opts:CATEGORIES, mode:"or",  field:f=>f.category?[f.category]:[]},
   {key:"brand",     label:"Marke",               opts:[],         mode:"or",  field:f=>f.brand?[f.brand]:[]},
+  {key:"gluten",    label:"Gluten",              opts:["glutenfrei","enthält Gluten","keine Angabe"], mode:"or",
+   labels:{"glutenfrei":"✅ glutenfrei","enthält Gluten":"🌾 enthält Gluten","keine Angabe":"❓ keine Angabe"}, field:f=>[glutenStatus(f)]},
   {key:"vegan",     label:"Vegan/tierisch",      opts:VEGAN,      mode:"or",  field:f=>f.vegan?[f.vegan]:[]},
   {key:"hay",       label:"Trennkost-Gruppe",          opts:HAY,        mode:"and", field:f=>f.hay_groups||[]},
   {key:"haykonform", label:"Trennkost-Ampel", opts:["konform","bedingt konform","nicht konform","unbewertet"], mode:"or",
@@ -272,7 +275,7 @@ const FILTERS = [
   {key:"ampel",     label:"Ampel",  opts:["GRUEN","GELB","ROT","GRAU"],  mode:"or",
    labels:{GRUEN:"🟢 Grün",GELB:"🟡 Gelb",ROT:"🔴 Rot",GRAU:"⚪ Grau (Rückfrage)"}, field:f=>f.ampel?[f.ampel]:[]},
 ];
-const SEL = {category:new Set(),brand:new Set(),vegan:new Set(),haykonform:new Set(),hay:new Set(),allergens:new Set(),intol:new Set(),nachhaltigkeit:new Set(),ampel:new Set()};
+const SEL = {category:new Set(),gluten:new Set(),brand:new Set(),vegan:new Set(),haykonform:new Set(),hay:new Set(),allergens:new Set(),intol:new Set(),nachhaltigkeit:new Set(),ampel:new Set()};
 
 function buildFilters(){
   for(const flt of FILTERS){
@@ -318,6 +321,16 @@ function hayKonform(groups){
   if(fruit && prot) return {sym:"❌", t:"nicht konform – Obst + Eiweiß"};
   if(fruit && carb) return {sym:"⚠️", t:"bedingt – Obst + Stärke"};
   return {sym:"✅", t:"konform"};
+}
+
+// Gluten-Status aus Allergenen/Unverträglichkeiten/Kennzeichnung ableiten
+const GLUTEN_ALLERG = ["Glutenhaltiges Getreide","Weizen","Roggen","Gerste","Hafer"];
+const GLUTEN_INTOL = ["Zöliakie / Gluten","Glutensensitivität / Weizensensitivität"];
+function glutenStatus(f){
+  const al=f.allergens||[], it=f.intolerances||[];
+  if(al.some(a=>GLUTEN_ALLERG.includes(a)) || it.some(i=>GLUTEN_INTOL.includes(i))) return "enthält Gluten";
+  const labeled = ((f.public_note||"")+" "+(f.ingredients||"")).toLowerCase().includes("glutenfrei");
+  return (labeled || al.length) ? "glutenfrei" : "keine Angabe";
 }
 
 // ── Auth ──
