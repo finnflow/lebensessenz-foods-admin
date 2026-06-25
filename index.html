@@ -265,8 +265,8 @@ const FILTERS = [
   {key:"brand",     label:"Marke",               opts:[],         mode:"or",  field:f=>f.brand?[f.brand]:[]},
   {key:"gluten",    label:"Gluten",              opts:["glutenfrei","kann Spuren von Gluten","enthält Gluten","keine Angabe"], mode:"or",
    labels:{"glutenfrei":"✅ glutenfrei","kann Spuren von Gluten":"⚠️ kann Spuren von Gluten","enthält Gluten":"🌾 enthält Gluten","keine Angabe":"❓ keine Angabe"}, field:f=>[glutenStatus(f)]},
-  {key:"freivon",   label:"Frei von",            opts:["Laktose","Soja","Nüsse/Erdnuss","Ei","Sesam"], mode:"and",
-   labels:{"Laktose":"🥛 Laktose","Soja":"🌱 Soja","Nüsse/Erdnuss":"🥜 Nüsse/Erdnuss","Ei":"🥚 Ei","Sesam":"Sesam"}, field:f=>freeOfSet(f)},
+  {key:"freivon",   label:"Frei von / geeignet", opts:["Laktose","Soja","Nüsse/Erdnuss","Ei","Sesam","Fructose","Histamin","Sorbit"], mode:"and",
+   labels:{"Laktose":"🥛 laktosefrei","Soja":"🌱 sojafrei","Nüsse/Erdnuss":"🥜 nussfrei","Ei":"🥚 eifrei","Sesam":"sesamfrei","Fructose":"🍏 fructosearm","Histamin":"histaminarm","Sorbit":"sorbitarm"}, field:f=>freeOfSet(f)},
   {key:"vegan",     label:"Vegan/tierisch",      opts:VEGAN,      mode:"or",  field:f=>f.vegan?[f.vegan]:[]},
   {key:"hay",       label:"Trennkost-Gruppe",          opts:HAY,        mode:"and", field:f=>f.hay_groups||[]},
   {key:"haykonform", label:"Trennkost-Ampel", opts:["konform","bedingt konform","nicht konform","unbewertet"], mode:"or",
@@ -339,11 +339,14 @@ function glutenStatus(f){
 
 // "Frei von …" — kombinierter Filter: liefert die Allergene, von denen ein Produkt SICHER frei ist
 const FREI_VON = [
-  {key:"Laktose",       allerg:["Milch","Laktose"],                 intol:["Laktoseintoleranz"], label:/laktosefrei|lactosefrei/},
-  {key:"Soja",          allerg:["Soja"],                            intol:["Soja-Unverträglichkeit"], label:/sojafrei/},
-  {key:"Nüsse/Erdnuss", allerg:["Schalenfrüchte / Nüsse","Erdnuss"], intol:[], label:/nussfrei/},
-  {key:"Ei",            allerg:["Ei"],                              intol:[], label:/eifrei|ohne ei\b/},
-  {key:"Sesam",         allerg:["Sesam"],                           intol:[], label:/sesamfrei/},
+  {key:"Laktose",       basis:"allerg", allerg:["Milch","Laktose"],                 intol:["Laktoseintoleranz"], label:/laktosefrei|lactosefrei/},
+  {key:"Soja",          basis:"allerg", allerg:["Soja"],                            intol:["Soja-Unverträglichkeit"], label:/sojafrei/},
+  {key:"Nüsse/Erdnuss", basis:"allerg", allerg:["Schalenfrüchte / Nüsse","Erdnuss"], intol:[], label:/nussfrei/},
+  {key:"Ei",            basis:"allerg", allerg:["Ei"],                              intol:[], label:/eifrei|ohne ei\b/},
+  {key:"Sesam",         basis:"allerg", allerg:["Sesam"],                           intol:[], label:/sesamfrei/},
+  {key:"Fructose",      basis:"intol",  allerg:[], intol:["Fruktosemalabsorption"],     label:/fructosearm|fruktosearm|fructosefrei|fruktosefrei/},
+  {key:"Histamin",      basis:"intol",  allerg:[], intol:["Histaminintoleranz"],        label:/histaminarm|histaminfrei/},
+  {key:"Sorbit",        basis:"intol",  allerg:[], intol:["Sorbit-Unverträglichkeit"],  label:/sorbitarm|sorbitfrei/},
 ];
 function freeOfSet(f){
   const al=f.allergens||[], it=f.intolerances||[];
@@ -351,7 +354,8 @@ function freeOfSet(f){
   const out=[];
   for(const x of FREI_VON){
     if(al.some(a=>x.allerg.includes(a)) || it.some(i=>x.intol.includes(i))) continue;
-    if(al.length || x.label.test(txt)) out.push(x.key);
+    const hasData = x.basis==="allerg" ? al.length>0 : it.length>0;
+    if(hasData || x.label.test(txt)) out.push(x.key);
   }
   return out;
 }
