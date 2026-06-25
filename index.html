@@ -262,8 +262,8 @@ const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,ve
 const FILTERS = [
   {key:"category",  label:"Kategorie",           opts:CATEGORIES, mode:"or",  field:f=>f.category?[f.category]:[]},
   {key:"brand",     label:"Marke",               opts:[],         mode:"or",  field:f=>f.brand?[f.brand]:[]},
-  {key:"gluten",    label:"Gluten",              opts:["glutenfrei","enthält Gluten","keine Angabe"], mode:"or",
-   labels:{"glutenfrei":"✅ glutenfrei","enthält Gluten":"🌾 enthält Gluten","keine Angabe":"❓ keine Angabe"}, field:f=>[glutenStatus(f)]},
+  {key:"gluten",    label:"Gluten",              opts:["glutenfrei","kann Spuren von Gluten","enthält Gluten","keine Angabe"], mode:"or",
+   labels:{"glutenfrei":"✅ glutenfrei","kann Spuren von Gluten":"⚠️ kann Spuren von Gluten","enthält Gluten":"🌾 enthält Gluten","keine Angabe":"❓ keine Angabe"}, field:f=>[glutenStatus(f)]},
   {key:"vegan",     label:"Vegan/tierisch",      opts:VEGAN,      mode:"or",  field:f=>f.vegan?[f.vegan]:[]},
   {key:"hay",       label:"Trennkost-Gruppe",          opts:HAY,        mode:"and", field:f=>f.hay_groups||[]},
   {key:"haykonform", label:"Trennkost-Ampel", opts:["konform","bedingt konform","nicht konform","unbewertet"], mode:"or",
@@ -329,8 +329,9 @@ const GLUTEN_INTOL = ["Zöliakie / Gluten","Glutensensitivität / Weizensensitiv
 function glutenStatus(f){
   const al=f.allergens||[], it=f.intolerances||[];
   if(al.some(a=>GLUTEN_ALLERG.includes(a)) || it.some(i=>GLUTEN_INTOL.includes(i))) return "enthält Gluten";
-  const labeled = ((f.public_note||"")+" "+(f.ingredients||"")).toLowerCase().includes("glutenfrei");
-  return (labeled || al.length) ? "glutenfrei" : "keine Angabe";
+  const txt = ((f.public_note||"")+" "+(f.ingredients||"")).toLowerCase();
+  if(/kann spuren[^.]*?(gluten|weizen|roggen|gerste|dinkel|kamut|grünkern)/.test(txt)) return "kann Spuren von Gluten";
+  return (txt.includes("glutenfrei") || al.length) ? "glutenfrei" : "keine Angabe";
 }
 
 // ── Auth ──
