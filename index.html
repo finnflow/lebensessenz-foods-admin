@@ -56,6 +56,22 @@
   .btn.danger{background:var(--rot);color:#fff;border-color:var(--rot)}
   .btn.danger:hover{background:#b8402f}
   .count{color:var(--muted);font-size:13px;padding:0 20px 8px}
+  /* Kompakter Filter: Knopf + Panel + aktive Chips */
+  .filtertoggle{display:inline-flex;align-items:center;gap:7px}
+  .filtertoggle.active{border-color:var(--accent);background:#f7efe2;font-weight:700}
+  .fcount{background:var(--accent);color:#fff;font-size:12px;font-weight:700;border-radius:999px;padding:1px 8px}
+  .activechips{display:none;flex-wrap:wrap;gap:7px;align-items:center;padding:0 20px 8px}
+  .achip{display:inline-flex;align-items:center;gap:7px;background:#f3ece0;border:1px solid var(--accent);border-radius:999px;padding:4px 6px 4px 11px;font-size:12.5px;color:var(--ink)}
+  .achip-k{color:var(--muted)}
+  .achip-x{border:0;background:rgba(0,0,0,.07);color:var(--ink);width:18px;height:18px;border-radius:999px;cursor:pointer;font-size:11px;line-height:1;display:grid;place-items:center}
+  .achip-x:hover{background:var(--rot);color:#fff}
+  .achip-reset{border:0;background:none;color:var(--muted);font-size:12.5px;cursor:pointer;text-decoration:underline;margin-left:2px}
+  .filterpanel{display:none;margin:2px 20px 10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .filterpanel.open{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}
+  .fgroup-h{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:9px}
+  .fgroup-body{display:flex;flex-direction:column;gap:7px}
+  .fgroup-body .msel{display:block}
+  .fgroup-body .msel-btn{width:100%;text-align:left}
   .hint-bar{padding:0 20px 10px;color:var(--muted);font-size:12.5px}
   .bulkbar{display:none;align-items:center;gap:10px;margin:0 20px 10px;padding:9px 14px;background:#fbe7e3;border:1px solid #f0cfc7;border-radius:10px}
   .bulkbar.show{display:flex}
@@ -161,16 +177,7 @@
 
   <div class="controls">
     <input type="search" id="search" placeholder="Suche nach Name…" />
-    <div class="msel" data-key="ampel"></div>
-    <div class="msel" data-key="brand"></div>
-    <div class="msel" data-key="category"></div>
-    <div class="msel" data-key="freivon"></div>
-    <div class="msel" data-key="vegan"></div>
-    <div class="msel" data-key="hay"></div>
-    <div class="msel" data-key="haykonform"></div>
-    <div class="msel" data-key="allerg_intol"></div>
-    <div class="msel" data-key="stores"></div>
-    <div class="msel" data-key="price"></div>
+    <button class="btn filtertoggle" id="filterToggle" type="button">⚲ Filter <span class="fcount" id="filterCount" style="display:none"></span> ▾</button>
     <select id="fStatus">
       <option value="">Alle</option>
       <option value="draft">Nur neue (Entwurf)</option>
@@ -178,6 +185,41 @@
     </select>
     <label><input type="checkbox" id="fUnreviewed" /> nur unbestätigte</label>
     <button class="btn primary" id="newBtn">+ Neues Lebensmittel</button>
+  </div>
+
+  <div class="activechips" id="activeChips"></div>
+
+  <div class="filterpanel" id="filterPanel">
+    <div>
+      <div class="fgroup-h">🌿 Gesundheit &amp; Eignung</div>
+      <div class="fgroup-body">
+        <div class="msel" data-key="ampel"></div>
+        <div class="msel" data-key="vegan"></div>
+      </div>
+    </div>
+    <div>
+      <div class="fgroup-h">🍽️ Trennkost</div>
+      <div class="fgroup-body">
+        <div class="msel" data-key="haykonform"></div>
+        <div class="msel" data-key="hay"></div>
+      </div>
+    </div>
+    <div>
+      <div class="fgroup-h">🛡️ Verträglichkeit</div>
+      <div class="fgroup-body">
+        <div class="msel" data-key="freivon"></div>
+        <div class="msel" data-key="allerg_intol"></div>
+      </div>
+    </div>
+    <div>
+      <div class="fgroup-h">🛒 Einkauf</div>
+      <div class="fgroup-body">
+        <div class="msel" data-key="category"></div>
+        <div class="msel" data-key="brand"></div>
+        <div class="msel" data-key="stores"></div>
+        <div class="msel" data-key="price"></div>
+      </div>
+    </div>
   </div>
   <div class="count" id="count"></div>
 
@@ -519,8 +561,41 @@ function render(){
   document.querySelectorAll("th.sortable").forEach(th=>{
     th.querySelector(".arr").textContent = th.dataset.sort===sortField ? (sortDir==="asc"?" ▲":" ▼") : "";
   });
+  syncFilterUI();
 }
 ["#search","#fStatus","#fUnreviewed"].forEach(s=>$(s).addEventListener("input",render));
+
+// ── Kompakter Filter: Panel auf/zu, Zähler, aktive Chips ──
+$("#filterToggle").onclick=()=>$("#filterPanel").classList.toggle("open");
+function activeFilterCount(){ let n=0; for(const k in SEL) n+=SEL[k].size; return n; }
+function msBtn(key){ return document.querySelector(`.msel[data-key="${key}"] .msel-btn`); }
+function syncFilterUI(){
+  const n=activeFilterCount();
+  const badge=$("#filterCount"); if(badge){ badge.textContent=n||''; badge.style.display=n?'':'none'; }
+  const tog=$("#filterToggle"); if(tog) tog.classList.toggle("active", n>0);
+  const host=$("#activeChips"); if(!host) return;
+  let html='';
+  for(const flt of FILTERS) for(const v of SEL[flt.key]){
+    const lab=(flt.labels&&flt.labels[v])||v;
+    html+=`<span class="achip"><span class="achip-k">${esc(flt.label)}:</span> ${esc(lab)} <button type="button" class="achip-x" data-k="${esc(flt.key)}" data-v="${esc(v)}" aria-label="Filter entfernen">✕</button></span>`;
+  }
+  if(n>1) html+=`<button type="button" class="achip-reset" id="resetAll">Alle zurücksetzen</button>`;
+  host.innerHTML=html; host.style.display=n?'flex':'none';
+  host.querySelectorAll(".achip-x").forEach(b=>b.onclick=()=>removeFilterValue(b.dataset.k,b.dataset.v));
+  const ra=$("#resetAll"); if(ra) ra.onclick=resetAllFilters;
+}
+function removeFilterValue(key,v){
+  SEL[key].delete(v);
+  document.querySelectorAll(`.msel[data-key="${key}"] .msel-pop input`).forEach(cb=>{ if(cb.value===v) cb.checked=false; });
+  const flt=FILTERS.find(f=>f.key===key), btn=msBtn(key); if(flt&&btn) updateMselBtn(flt,btn);
+  render();
+}
+function resetAllFilters(){
+  for(const k in SEL) SEL[k].clear();
+  document.querySelectorAll(".msel-pop input").forEach(c=>c.checked=false);
+  for(const flt of FILTERS){ const btn=msBtn(flt.key); if(btn) updateMselBtn(flt,btn); }
+  render();
+}
 
 // ── Auswahl / Löschen ──
 function toggleRow(e,idx){
