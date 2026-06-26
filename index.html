@@ -314,12 +314,16 @@ const chipsHtml=(vals,cmap)=>(vals&&vals.length)?vals.map(v=>`<span class="chip 
 function hayKonform(groups){
   const G = new Set((groups||[]).filter(g => g !== "unklar"));
   if(!G.size) return null;
-  const carb  = G.has("Kohlenhydrat-Quelle") || G.has("Hülsenfrüchte");
+  const carb  = G.has("Kohlenhydrat-Quelle");
   const prot  = G.has("Protein-Quelle");
   const fruit = G.has("Obst");
-  if(carb && prot)  return {sym:"❌", t:"nicht konform – Stärke + Eiweiß"};
-  if(fruit && prot) return {sym:"❌", t:"nicht konform – Obst + Eiweiß"};
-  if(fruit && carb) return {sym:"⚠️", t:"bedingt – Obst + Stärke"};
+  const huel  = G.has("Hülsenfrüchte");
+  // Muss exakt zu assess() in hay_notes.py passen: Obst + Stärke = konform (Zucker/Konzentrat = KH);
+  // Hülsenfrüchte (Stärke+Eiweiß zugleich) clashen mit KH, Eiweiß und Obst.
+  if(carb && prot)         return {sym:"❌", t:"nicht konform – Stärke + Eiweiß"};
+  if(fruit && prot)        return {sym:"❌", t:"nicht konform – Obst + Eiweiß"};
+  if(huel && (carb||prot)) return {sym:"❌", t:"nicht konform – Hülsenfrüchte mit Stärke/Eiweiß"};
+  if(huel && fruit)        return {sym:"❌", t:"nicht konform – Obst + Hülsenfrüchte"};
   return {sym:"✅", t:"konform"};
 }
 
