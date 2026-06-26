@@ -17,6 +17,12 @@
   .hidden{display:none!important}
   .muted{color:var(--muted)}
 
+  /* Farbige Zutaten-/Begründungs-Vorschau */
+  .z-good{color:#3f9d54}.z-bad{color:#cf4b3a}.z-warn{color:#d97a1e}.z-neu{color:#8a8276}.z-exp{color:var(--ink)}
+  .zut-prev,.rsn-prev{font-size:13.5px;line-height:1.7;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fdfcfa;margin-bottom:6px;word-break:break-word}
+  .rsn-prev div{margin:1px 0}
+  .prevlabel{font-size:11px;color:var(--muted);margin:0 0 3px}
+
   /* Login */
   #login{min-height:100vh;display:grid;place-items:center;padding:24px}
   #login .box{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:32px;width:100%;max-width:380px}
@@ -256,13 +262,11 @@ const FILTERS = [
   {key:"category",  label:"Kategorie",           opts:[...CATEGORIES,BIO_FILTER], mode:"or",
    field:f=>{const a=f.category?[f.category]:[]; if((f.nachhaltigkeit||[]).includes("bio")) a.push(BIO_FILTER); return a;}},
   {key:"brand",     label:"Marke",               opts:[],         mode:"or",  field:f=>f.brand?[f.brand]:[]},
-  {key:"freivon",   label:"Gluten & Frei von", opts:["glutenfrei","kann Spuren von Gluten","enthält Gluten","keine Angabe","Laktose","Soja","Nüsse/Erdnuss","Ei","Sesam","Fisch","Sellerie","Senf","Sulfite","Lupine","Krebstiere","Weichtiere","Fructose","Histamin","Sorbit"],
-   labels:{"glutenfrei":"🌾 glutenfrei","kann Spuren von Gluten":"🌾 kann Spuren von Gluten","enthält Gluten":"🌾 enthält Gluten","keine Angabe":"🌾 keine Angabe (Gluten)","Laktose":"🥛 laktosefrei","Soja":"🌱 sojafrei","Nüsse/Erdnuss":"🥜 nussfrei","Ei":"🥚 eifrei","Sesam":"sesamfrei","Fisch":"🐟 fischfrei","Sellerie":"🥬 selleriefrei","Senf":"🍯 senffrei","Sulfite":"sulfitfrei","Lupine":"lupinenfrei","Krebstiere":"krebstierfrei","Weichtiere":"weichtierfrei","Fructose":"🍏 fructosearm","Histamin":"histaminarm","Sorbit":"sorbitarm"},
+  {key:"freivon",   label:"Frei von", opts:["glutenfrei","Laktose","Soja","Nüsse/Erdnuss","Ei","Sesam","Fisch","Sellerie","Senf","Sulfite","Lupine","Krebstiere","Weichtiere","Fructose","Histamin","Sorbit"],
+   labels:{"glutenfrei":"🌾 glutenfrei","Laktose":"🥛 laktosefrei","Soja":"🌱 sojafrei","Nüsse/Erdnuss":"🥜 nussfrei","Ei":"🥚 eifrei","Sesam":"sesamfrei","Fisch":"🐟 fischfrei","Sellerie":"🥬 selleriefrei","Senf":"🍯 senffrei","Sulfite":"sulfitfrei","Lupine":"lupinenfrei","Krebstiere":"krebstierfrei","Weichtiere":"weichtierfrei","Fructose":"🍏 fructosearm","Histamin":"histaminarm","Sorbit":"sorbitarm"},
    match:(f,chosen)=>{
-     const GLU=["glutenfrei","kann Spuren von Gluten","enthält Gluten","keine Angabe"];
-     const selGlu=[...chosen].filter(c=>GLU.includes(c));
-     if(selGlu.length && !selGlu.includes(glutenStatus(f))) return false;
-     const selOther=[...chosen].filter(c=>!GLU.includes(c));
+     if(chosen.has("glutenfrei") && glutenStatus(f)!=="glutenfrei") return false;
+     const selOther=[...chosen].filter(c=>c!=="glutenfrei");
      if(selOther.length){ const free=freeOfSet(f); if(!selOther.every(k=>free.includes(k))) return false; }
      return true;
    }},
@@ -271,7 +275,17 @@ const FILTERS = [
   {key:"haykonform", label:"Trennkost konform?", opts:["konform","bedingt konform","nicht konform","unbewertet"], mode:"or",
    labels:{"konform":"✅ konform","bedingt konform":"⚠️ bedingt konform","nicht konform":"❌ nicht konform","unbewertet":"– noch offen"},
    field:f=>{const hk=hayKonform(f.hay_groups); return [hk?({"✅":"konform","⚠️":"bedingt konform","❌":"nicht konform"}[hk.sym]):"unbewertet"];}},
-  {key:"allerg_intol", label:"Allergene & Unverträglichkeiten", opts:[...ALLERGENS,...INTOL], mode:"and", field:f=>[...(f.allergens||[]),...(f.intolerances||[])]},
+  {key:"allerg_intol", label:"Allergene & Unverträglichkeiten",
+   opts:["enthält Gluten","kann Spuren von Gluten",...ALLERGENS.filter(a=>!["Glutenhaltiges Getreide","Weizen","Roggen","Gerste","Hafer"].includes(a)),...INTOL.filter(i=>!["Zöliakie / Gluten","Glutensensitivität / Weizensensitivität"].includes(i))],
+   labels:{"enthält Gluten":"🌾 enthält Gluten","kann Spuren von Gluten":"🌾 kann Spuren von Gluten"},
+   match:(f,chosen)=>{
+     const GLU=["enthält Gluten","kann Spuren von Gluten"];
+     const selGlu=[...chosen].filter(c=>GLU.includes(c));
+     if(selGlu.length && !selGlu.includes(glutenStatus(f))) return false;
+     const selRest=[...chosen].filter(c=>!GLU.includes(c));
+     if(selRest.length){ const have=[...(f.allergens||[]),...(f.intolerances||[])]; if(!selRest.every(k=>have.includes(k))) return false; }
+     return true;
+   }},
   {key:"ampel",     label:"Ampel",  opts:["GRUEN","GELB","ROT","GRAU"],  mode:"or",
    labels:{GRUEN:"🟢 Grün",GELB:"🟡 Gelb",ROT:"🔴 Rot",GRAU:"⚪ Grau (Rückfrage)"}, field:f=>f.ampel?[f.ampel]:[]},
 ];
@@ -603,6 +617,58 @@ function setupPhoto(){
   $("#photoRemove").onclick=()=>{ drawerImageUrl=null; renderPhotoPreview();
     status.textContent=`entfernt — „Speichern" nicht vergessen`; };
 }
+/* ===== Farbige Zutaten-Einordnung (gesundheitsförderlich/-abträglich/Gefahr/neutral) ===== */
+const Z_WARN=['aspartam','acesulfam','cyclamat','saccharin','sucralose','e 950','e950','e 951','e951','e 952','e952','e 954','e954','e 955','e955','neotam','advantam','glutamat','geschmacksverstärker','e 621','e621','carrageen','e 407','e407','titandioxid','e 171','e171','nitritpökel','pökelsalz','erythrit','tartrazin','azorubin','chinolingelb','cochenillerot','allurarot'];
+const Z_BAD=['zucker','invertzucker','glukosesirup','glucosesirup','glukose','glucose','fruktose','fructose','dextrose','traubenzucker','maltodextrin','dicksaft','reissirup','agavendicksaft','sirup','maltose','maltit','xylit','sorbit','isomalt','mannit','fruchtsaftkonzentrat','saftkonzentrat','fruchtsüße','sonnenblumenöl','distelöl','sojaöl','maiskeimöl','traubenkernöl','baumwollsaatöl','palmöl','palmfett','palmkern','pflanzenfett','pflanzliche fette','pflanzliches öl','pflanzliche öle','weizenmehl','weißmehl','auszugsmehl','hartweizen','maisstärke','reismehl','reisstärke','tapiokastärke','weizenstärke','modifizierte stärke','kartoffelstärke','maisgrieß','maismehl','aroma','hefeextrakt'];
+const Z_GOOD=['vollkorn','haferflocke','hafermehl','naturreis','mandel','haselnuss','walnuss','cashew','paranuss','pekannuss','erdnuss','leinsam','leinsaat','chiasam','kürbiskern','sonnenblumenkern','sesam','hanfsam','hanfsaat','kichererbse','linsen','inulin','flohsamen','ballaststoff','akazienfaser','zichorienfaser','oligofruktose','psyllium','apfelfaser','zitrusfaser','haferkleie','weizenkleie','olivenöl','rapsöl','leinöl','walnussöl','hanföl','avocadoöl','fermentiert','joghurtkultur','milchsäurekultur','kulturen','datteln','dattelpaste','dattelmark','fruchtmark','tomate','karotte','möhre','paprika','zwiebel','spinat','brokkoli','gemüse','champignon','steinpilz','kürbis','rote bete','kurkuma','ingwer','steviablätter','grüntee','schwarztee','matcha','kakaomasse','kakaopulver','vitamin'];
+const Z_NEU=['kakaobutter','kokosöl','kokosfett','kokosnussöl','sheabutter','butterreinfett','wasser','säuerungsmittel','citronensäure','säureregulator','natriumcitrat','ascorbinsäure','antioxidationsmittel','pektin','guarkernmehl','johannisbrotkernmehl','xanthan','verdickungsmittel','geliermittel','lecithin','emulgator','diglyceride','glycerin','feuchthaltemittel','kohlensäure','backtriebmittel','natriumhydrogencarbonat','gewürz','erbsenprotein','sojaprotein','reisprotein','ackerbohnenprotein','weizenprotein','weizengluten','seitan','sonnenblumenprotein','hanfprotein','milcheiweiß','milchprotein','molkenprotein','calciumcaseinat'];
+function saltGrams(nut){ if(!nut) return null; const m=String(nut).match(/salz[^0-9]*([\d.,]+)\s*g/i); return m?parseFloat(m[1].replace(',','.')):null; }
+function classifyZutat(tok, salt){
+  const t=(tok||"").toLowerCase();
+  const hit=arr=>arr.some(k=>t.includes(k));
+  if(/frei\b|frei[,)]|\bohne /.test(t)) return 'neu';           // zuckerfrei, aspartamfrei, ohne …
+  if(t.includes('ungehärtet')) return 'neu';
+  if(hit(Z_WARN)) return 'warn';
+  if(t.includes('salz') && !t.includes('salzsäure')) return (salt!=null && salt>1.5)?'bad':'neu';
+  if(hit(Z_NEU)) return 'neu';
+  if(hit(Z_GOOD)) return 'good';
+  if(hit(Z_BAD)) return 'bad';
+  return 'neu';
+}
+function splitTopLevel(s){
+  const out=[]; let depth=0,cur="";
+  for(const ch of (s||"")){
+    if('(['.includes(ch)) depth++;
+    else if(')]'.includes(ch)) depth=Math.max(0,depth-1);
+    if(ch===',' && depth===0){ out.push(cur); cur=""; } else cur+=ch;
+  }
+  if(cur.trim()) out.push(cur);
+  return out.map(x=>x.trim()).filter(Boolean);
+}
+const Z_CLS={good:'z-good',bad:'z-bad',warn:'z-warn',neu:'z-neu'};
+function renderZutatenColored(text, salt){
+  const toks=splitTopLevel(text); if(!toks.length) return "";
+  return toks.map(t=>`<span class="${Z_CLS[classifyZutat(t,salt)]}">${esc(t)}</span>`).join(", ");
+}
+function renderReasonColored(text){
+  if(!text||!text.trim()) return "";
+  let cur='z-neu'; const out=[];
+  for(const raw of text.split('\n')){
+    const s=raw.trim();
+    if(!s){ out.push('<div style="height:6px"></div>'); continue; }
+    const m=s.match(/^([\s•👍👎⚠⚪️‍\u{1F3FB}-\u{1F3FF}]*)(.*)$/u);
+    const lead=m?m[1]:"", content=m?m[2]:s;
+    if(lead.includes('👍')) cur='z-good'; else if(lead.includes('👎')) cur='z-bad';
+    else if(lead.includes('⚠')) cur='z-warn'; else if(lead.includes('⚪')) cur='z-neu';
+    if(!content){ out.push(`<div>${esc(lead)}</div>`); continue; }
+    const ci=content.indexOf(':');
+    const inner = ci>0
+      ? `<span class="${cur}">${esc(content.slice(0,ci))}</span><span class="z-exp">${esc(content.slice(ci))}</span>`
+      : `<span class="${cur}">${esc(content)}</span>`;
+    out.push(`<div>${esc(lead)}${inner}</div>`);
+  }
+  return out.join("");
+}
 function openDrawer(food){
   current = food || {__new:true,status:"draft",hay_groups:[],allergens:[],intolerances:[]};
   $("#drawerTitle").textContent = food ? food.name : "Neues Lebensmittel";
@@ -620,17 +686,25 @@ function openDrawer(food){
     <div class="field"><label>Kategorie</label><select id="e_category"><option value="">— wählen —</option>${CATEGORIES.map(c=>`<option ${f.category===c?'selected':''}>${esc(c)}</option>`).join("")}</select></div>
     <div class="field"><label>Vegan / vegetarisch / tierisch</label><select id="e_vegan"><option value="">— wählen —</option>${VEGAN.map(v=>`<option ${f.vegan===v?'selected':''}>${esc(v)}</option>`).join("")}</select></div>
     <div class="field"><label>Ampel</label><div class="ampel-row" id="e_ampel">${AMPEL.map(([v,l])=>`<button type="button" data-v="${v}" class="${f.ampel===v?'sel':''}">${l}</button>`).join("")}</div></div>
-    <div class="field"><label>Ampel-Begründung</label><textarea id="e_ampel_reason">${esc(f.ampel_reason||"")}</textarea></div>
+    <div class="field"><label>Ampel-Begründung</label><div class="prevlabel">Vorschau (Zutat farbig, Erklärung schwarz)</div><div class="rsn-prev" id="prev_reason"></div><textarea id="e_ampel_reason">${esc(f.ampel_reason||"")}</textarea></div>
     <div class="field"><label>Trennkost-Hauptgruppe</label>${drawerChips("hay_groups",HAY,f.hay_groups)}</div>
     <div class="field"><label>Trennkost-Hinweis</label><textarea id="e_trennkost_note">${esc(f.trennkost_note||"")}</textarea></div>
     <div class="field"><label>Gesundheitlicher Hinweis</label><textarea id="e_health_note">${esc(f.health_note||"")}</textarea></div>
     <div class="field"><label>Hinweise</label><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></div>
     <div class="field"><label>Allergene</label>${drawerChips("allergens",ALLERGENS,f.allergens)}</div>
     <div class="field"><label>Unverträglichkeiten</label>${drawerChips("intolerances",INTOL,f.intolerances)}</div>
-    <div class="field"><label>Zutaten <small style="color:var(--muted);font-weight:400">(Freitext)</small></label><textarea id="e_ingredients" placeholder="z. B. Hähnchenfleisch (60%), Paniermehl (Weizen), Pflanzenöl, Salz, Gewürze …">${esc(f.ingredients||"")}</textarea></div>
+    <div class="field"><label>Zutaten <small style="color:var(--muted);font-weight:400">(Freitext)</small></label><div class="prevlabel">Vorschau (🟢 förderlich · 🔴 abträglich · 🟠 Gefahr · grau neutral)</div><div class="zut-prev" id="prev_zutaten"></div><textarea id="e_ingredients" placeholder="z. B. Hähnchenfleisch (60%), Paniermehl (Weizen), Pflanzenöl, Salz, Gewürze …">${esc(f.ingredients||"")}</textarea></div>
     <div class="field"><label>Nährwerte <small style="color:var(--muted);font-weight:400">(Freitext, z. B. pro 100 g)</small></label><textarea id="e_nutrition" placeholder="z. B. Energie 250 kcal · Fett 14 g (davon ges. 3 g) · KH 18 g (Zucker 1 g) · Eiweiß 12 g · Salz 1,2 g">${esc(f.nutrition||"")}</textarea></div>`;
   $("#e_ampel").querySelectorAll("button").forEach(b=>b.onclick=()=>{$("#e_ampel").querySelectorAll("button").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");});
   $("#drawerBody").querySelectorAll(".chips label").forEach(l=>l.querySelector("input").onchange=e=>l.classList.toggle("on",e.target.checked));
+  function refreshPrev(){
+    const salt=saltGrams($("#e_nutrition")?$("#e_nutrition").value:(f.nutrition||""));
+    const zp=$("#prev_zutaten"), rp=$("#prev_reason");
+    if(zp) zp.innerHTML=renderZutatenColored($("#e_ingredients").value,salt)||'<span class="muted" style="font-size:12px">— keine Zutaten —</span>';
+    if(rp) rp.innerHTML=renderReasonColored($("#e_ampel_reason").value)||'<span class="muted" style="font-size:12px">— keine Begründung —</span>';
+  }
+  ["e_ingredients","e_ampel_reason","e_nutrition"].forEach(id=>{const el=$("#"+id); if(el) el.addEventListener("input",refreshPrev);});
+  refreshPrev();
   setupPhoto();
   $("#scrim").classList.add("show"); $("#drawer").classList.add("show");
 }
