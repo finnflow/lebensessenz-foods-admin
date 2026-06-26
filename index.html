@@ -704,6 +704,17 @@ function openDrawer(food){
     if(rp) rp.innerHTML=renderReasonColored($("#e_ampel_reason").value)||'<span class="muted" style="font-size:12px">— keine Begründung —</span>';
   }
   ["e_ingredients","e_ampel_reason","e_nutrition"].forEach(id=>{const el=$("#"+id); if(el) el.addEventListener("input",refreshPrev);});
+  function bindEditToggle(prevId, taId){
+    const prev=$("#"+prevId), ta=$("#"+taId);
+    if(!prev||!ta) return;
+    ta.style.display="none";
+    prev.style.cursor="text";
+    prev.title="Zum Bearbeiten klicken";
+    prev.addEventListener("click", ()=>{ prev.style.display="none"; ta.style.display=""; ta.focus(); });
+    ta.addEventListener("blur", ()=>{ refreshPrev(); ta.style.display="none"; prev.style.display=""; });
+  }
+  bindEditToggle("prev_zutaten","e_ingredients");
+  bindEditToggle("prev_reason","e_ampel_reason");
   refreshPrev();
   setupPhoto();
   $("#scrim").classList.add("show"); $("#drawer").classList.add("show");
