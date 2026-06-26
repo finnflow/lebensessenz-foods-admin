@@ -84,6 +84,7 @@
   th{background:#f4efe7;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
   th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
   th.sortable:hover{color:var(--ink)}
+  .arr.hint{opacity:.3;font-weight:400}
   th .arr{font-size:10px;color:var(--accent);margin-left:2px}
   tr:last-child td{border-bottom:0}
   .cbcol{width:36px;text-align:center;padding-left:8px;padding-right:8px}
@@ -559,7 +560,9 @@ function render(){
   $("#bulkbar").classList.toggle("show",selected.size>0);
   $("#bulkCount").textContent=`${selected.size} ausgewählt`;
   document.querySelectorAll("th.sortable").forEach(th=>{
-    th.querySelector(".arr").textContent = th.dataset.sort===sortField ? (sortDir==="asc"?" ▲":" ▼") : "";
+    const active = th.dataset.sort===sortField, arr=th.querySelector(".arr");
+    arr.textContent = active ? (sortDir==="asc"?" ▲":" ▼") : " ⇅";
+    arr.classList.toggle("hint", !active);
   });
   syncFilterUI();
 }
