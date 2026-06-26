@@ -162,8 +162,7 @@
     <div class="msel" data-key="vegan"></div>
     <div class="msel" data-key="hay"></div>
     <div class="msel" data-key="haykonform"></div>
-    <div class="msel" data-key="allergens"></div>
-    <div class="msel" data-key="intol"></div>
+    <div class="msel" data-key="allerg_intol"></div>
     <select id="fStatus">
       <option value="">Alle</option>
       <option value="draft">Nur neue (Entwurf)</option>
@@ -193,7 +192,7 @@
         <th class="sortable" data-sort="category">Kategorie<span class="arr"></span></th>
         <th class="sortable" data-sort="vegan">Vegan<span class="arr"></span></th>
         <th class="sortable" data-sort="hay_groups">Trennkost-Gruppe<span class="arr"></span></th>
-        <th class="hay-konform sortable" data-sort="hay_konform" title="Trennkost-Ampel: ✅ konform · ⚠️ bedingt · ❌ nicht konform">🚦<span class="arr"></span></th>
+        <th class="hay-konform sortable" data-sort="hay_konform" title="Trennkost konform? ✅ konform · ⚠️ bedingt · ❌ nicht konform">🚦<span class="arr"></span></th>
         <th class="sortable" data-sort="allergens">Allergene<span class="arr"></span></th>
         <th class="sortable" data-sort="intolerances">Unverträglichkeiten<span class="arr"></span></th>
         <th class="sortable" data-sort="reviewed">Geprüft<span class="arr"></span></th>
@@ -269,15 +268,14 @@ const FILTERS = [
    }},
   {key:"vegan",     label:"Vegan/tierisch",      opts:VEGAN,      mode:"or",  field:f=>f.vegan?[f.vegan]:[]},
   {key:"hay",       label:"Trennkost-Gruppe",          opts:HAY,        mode:"and", field:f=>f.hay_groups||[]},
-  {key:"haykonform", label:"Trennkost-Ampel", opts:["konform","bedingt konform","nicht konform","unbewertet"], mode:"or",
+  {key:"haykonform", label:"Trennkost konform?", opts:["konform","bedingt konform","nicht konform","unbewertet"], mode:"or",
    labels:{"konform":"✅ konform","bedingt konform":"⚠️ bedingt konform","nicht konform":"❌ nicht konform","unbewertet":"– noch offen"},
    field:f=>{const hk=hayKonform(f.hay_groups); return [hk?({"✅":"konform","⚠️":"bedingt konform","❌":"nicht konform"}[hk.sym]):"unbewertet"];}},
-  {key:"allergens", label:"Allergene",           opts:ALLERGENS,  mode:"and", field:f=>f.allergens||[]},
-  {key:"intol",     label:"Unverträglichkeiten", opts:INTOL,      mode:"and", field:f=>f.intolerances||[]},
+  {key:"allerg_intol", label:"Allergene & Unverträglichkeiten", opts:[...ALLERGENS,...INTOL], mode:"and", field:f=>[...(f.allergens||[]),...(f.intolerances||[])]},
   {key:"ampel",     label:"Ampel",  opts:["GRUEN","GELB","ROT","GRAU"],  mode:"or",
    labels:{GRUEN:"🟢 Grün",GELB:"🟡 Gelb",ROT:"🔴 Rot",GRAU:"⚪ Grau (Rückfrage)"}, field:f=>f.ampel?[f.ampel]:[]},
 ];
-const SEL = {category:new Set(),freivon:new Set(),brand:new Set(),vegan:new Set(),haykonform:new Set(),hay:new Set(),allergens:new Set(),intol:new Set(),ampel:new Set()};
+const SEL = {category:new Set(),freivon:new Set(),brand:new Set(),vegan:new Set(),haykonform:new Set(),hay:new Set(),allerg_intol:new Set(),ampel:new Set()};
 
 function buildFilters(){
   for(const flt of FILTERS){
