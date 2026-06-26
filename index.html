@@ -298,7 +298,7 @@ const FIELD_META = {
   allergens:   {label:"Allergene",            opts:ALLERGENS,  multi:true,  color:ALLERGEN_COLOR},
   intolerances:{label:"Unverträglichkeiten",  opts:INTOL,      multi:true,  color:INTOL_COLOR},
 };
-const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition,image_url,nachhaltigkeit,brand,stores,price";
+const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition,image_url,nachhaltigkeit,brand,stores,price,price_online";
 
 const STORES = ["Edeka","Rewe","Kaufland","Aldi","Lidl","Penny","Netto","dm","Rossmann","Müller","Budni","Bioladen","Alnatura","Denn's","Reformhaus","Online-Shop"];
 // Preis RELATIV zur Kategorie: günstig/teuer wird an ähnlichen Produkten gemessen
@@ -795,7 +795,8 @@ function openDrawer(food){
     <div class="field"><label>Name</label><input type="text" id="e_name" value="${esc(f.name||"")}"></div>
     <div class="field"><label>Marke <small style="color:var(--muted);font-weight:400">(z. B. Alnatura, dmBio — leer lassen, wenn markenlos)</small></label><input type="text" id="e_brand" value="${esc(f.brand||"")}"></div>
     <div class="field"><label>Erhältlich bei <small style="color:var(--muted);font-weight:400">(mehrere möglich)</small></label>${drawerChips("stores",STORES,f.stores)}</div>
-    <div class="field"><label>Ungefährer Preis <small style="color:var(--muted);font-weight:400">(€, z. B. 2.49 — ungefähr reicht)</small></label><input type="number" step="0.01" min="0" id="e_price" value="${f.price!=null&&f.price!==''?esc(f.price):''}"></div>
+    <div class="field"><label>Ungefährer Preis <small style="color:var(--muted);font-weight:400">(€, z. B. 2.49 — steuert die €/€€/€€€-Einstufung)</small></label><input type="number" step="0.01" min="0" id="e_price" value="${f.price!=null&&f.price!==''?esc(f.price):''}"></div>
+    <div class="field"><label>Genauer Preis (online) <small style="color:var(--muted);font-weight:400">(wie im Shop angegeben, z. B. 1,99 €)</small></label><input type="text" id="e_price_online" value="${f.price_online?esc(f.price_online):''}"></div>
     <div class="field"><label>Kategorie</label><select id="e_category"><option value="">— wählen —</option>${CATEGORIES.map(c=>`<option ${f.category===c?'selected':''}>${esc(c)}</option>`).join("")}</select></div>
     <div class="field"><label>Vegan / vegetarisch / tierisch</label><select id="e_vegan"><option value="">— wählen —</option>${VEGAN.map(v=>`<option ${f.vegan===v?'selected':''}>${esc(v)}</option>`).join("")}</select></div>
     <div class="field"><label>Ampel</label><div class="ampel-row" id="e_ampel">${AMPEL.map(([v,l])=>`<button type="button" data-v="${v}" class="${f.ampel===v?'sel':''}">${l}</button>`).join("")}</div></div>
@@ -843,7 +844,7 @@ $("#saveBtn").onclick=async()=>{
     ampel_reason:dval("e_ampel_reason"),trennkost_note:dval("e_trennkost_note"),
     health_note:dval("e_health_note"),public_note:dval("e_public_note"),
     hay_groups:dmulti("hay_groups"),allergens:dmulti("allergens"),intolerances:dmulti("intolerances"),
-    ingredients:dval("e_ingredients"),nutrition:dval("e_nutrition"),stores:dmulti("stores"),price:($("#e_price").value!==""?Number($("#e_price").value):null),image_url:drawerImageUrl,reviewed_by_ricarda:true};
+    ingredients:dval("e_ingredients"),nutrition:dval("e_nutrition"),stores:dmulti("stores"),price:($("#e_price").value!==""?Number($("#e_price").value):null),price_online:dval("e_price_online"),image_url:drawerImageUrl,reviewed_by_ricarda:true};
   let res;
   if(current.__new){ payload.item_id=slug(name); payload.status="draft"; payload.source="manual";
     res=await sb.from("foods").insert(payload).select(EDIT_COLS).single(); }
