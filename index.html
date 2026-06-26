@@ -259,7 +259,33 @@ const FIELD_META = {
 const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition,image_url,nachhaltigkeit,brand,stores,price";
 
 const STORES = ["Edeka","Rewe","Kaufland","Aldi","Lidl","Penny","Netto","dm","Rossmann","Müller","Budni","Bioladen","Alnatura","Denn's","Reformhaus","Online-Shop"];
-const PRICE_BANDS = [["günstig (≤ 2 €)",p=>p!=null&&p<=2],["mittel (2–5 €)",p=>p!=null&&p>2&&p<=5],["höher (> 5 €)",p=>p!=null&&p>5],["ohne Preis",p=>p==null]];
+// Preis RELATIV zur Kategorie: günstig/teuer wird an ähnlichen Produkten gemessen
+// (ein 2-€-Riegel ist teuer, 2-€-Nudeln sind günstig). € günstig · €€ mittel · €€€ höher.
+const PRICE_TIERS = [["€ günstig",'€'],["€€ mittel",'€€'],["€€€ höher",'€€€'],["ohne Preis",null]];
+const PRICE_BANDS = PRICE_TIERS; // Alias, falls noch irgendwo referenziert
+function priceNum(f){ return (f.price!=null&&f.price!=='')?Number(f.price):null; }
+let _priceCuts=null,_priceCutsN=-1;
+function priceCuts(){
+  if(_priceCuts && _priceCutsN===FOODS.length) return _priceCuts;
+  const byCat={};
+  for(const f of FOODS){ const p=priceNum(f); if(p==null) continue; (byCat[f.category]=byCat[f.category]||[]).push(p); }
+  const q=(a,t)=>a[Math.min(a.length-1,Math.floor(a.length*t))];
+  _priceCuts={};
+  for(const cat in byCat){ const a=byCat[cat].sort((x,y)=>x-y); if(a.length>=5) _priceCuts[cat]=[q(a,1/3),q(a,2/3)]; }
+  _priceCutsN=FOODS.length;
+  return _priceCuts;
+}
+function priceSymbolFor(f){
+  const p=priceNum(f); if(p==null) return null;
+  const c=priceCuts()[f.category];
+  if(c) return p<=c[0]?'€':(p<=c[1]?'€€':'€€€');
+  return p<=2?'€':(p<=5?'€€':'€€€'); // Fallback bis genug Kategorie-Preise da sind
+}
+function priceCell(f){
+  const p=priceNum(f); if(p==null) return '<span class="muted">—</span>';
+  const cmp=priceCuts()[f.category]?`im Vergleich zu „${f.category}"`:'(noch wenig Vergleich)';
+  return `<span title="~ ${p.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})} € · ${cmp}" style="color:var(--accent);font-weight:700;letter-spacing:1px">${priceSymbolFor(f)}</span>`;
+}
 // ── Mehrfach-Auswahl-Filter ──
 // mode "or"  = Lebensmittel hat EINEN der gewählten Werte (Kategorie, Ampel — Einzelwert)
 // mode "and" = Lebensmittel hat ALLE gewählten Werte (Hay/Allergene/Unverträglichkeiten — Mehrwert)
@@ -292,8 +318,8 @@ const FILTERS = [
      return true;
    }},
   {key:"stores",    label:"Erhältlich bei",      opts:STORES,     mode:"or",  field:f=>f.stores||[]},
-  {key:"price",     label:"Preis", opts:PRICE_BANDS.map(b=>b[0]),
-   match:(f,chosen)=>{ const p=f.price!=null&&f.price!==''?Number(f.price):null; return PRICE_BANDS.some(b=>chosen.has(b[0]) && b[1](p)); }},
+  {key:"price",     label:"Preis (Kategorie-Vergleich)", opts:PRICE_TIERS.map(b=>b[0]),
+   match:(f,chosen)=>{ const s=priceSymbolFor(f); return PRICE_TIERS.some(b=>chosen.has(b[0]) && b[1]===s); }},
   {key:"ampel",     label:"Ampel",  opts:["GRUEN","GELB","ROT","GRAU"],  mode:"or",
    labels:{GRUEN:"🟢 Grün",GELB:"🟡 Gelb",ROT:"🔴 Rot",GRAU:"⚪ Grau (Rückfrage)"}, field:f=>f.ampel?[f.ampel]:[]},
 ];
@@ -472,7 +498,7 @@ function render(){
       <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}</td>
       <td class="namecell"><b>${esc(f.name)}</b>${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
       <td>${f.brand?esc(f.brand):'<span class="muted">—</span>'}</td>
-      <td>${f.price!=null&&f.price!==''?'~ '+Number(f.price).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'<span class="muted">—</span>'}</td>
+      <td>${priceCell(f)}</td>
       <td class="editable" data-field="category">${f.category?esc(f.category):'<span class="muted">—</span>'}</td>
       <td class="editable" data-field="vegan">${f.vegan?`<span class="chip c-${VEGAN_COLOR[f.vegan]||'gray'}">${esc(f.vegan)}</span>`:'<span class="muted">—</span>'}</td>
       <td class="editable col-tags" data-field="hay_groups">${chipsHtml(f.hay_groups,HAY_COLOR)}</td>
