@@ -157,6 +157,18 @@
   .savemsg{color:var(--gruen);font-size:13px;margin-right:auto;align-self:center}
   .savemsg.err{color:var(--rot)}
   #cellpop .ampel-row button.sel{opacity:1;border-width:2px}
+
+  /* Detail-Profil (read-only) oben in der Schublade — inkl. berechneter Daten-Sicherheit (Sicher/Geschätzt) */
+  .profile{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:20px;background:#fbf8f3}
+  .profile .pv{display:flex;align-items:center;gap:10px;margin-bottom:13px;flex-wrap:wrap}
+  .profile .pv-badge{font-weight:700;font-size:14px;padding:3px 12px;border-radius:999px}
+  .profile.is-sicher .pv-badge{background:#e3f3e6;color:#2f6b3f}
+  .profile.is-geschaetzt .pv-badge{background:#fbe6cf;color:#955619}
+  .profile .pv-reason{color:var(--muted);font-size:13px}
+  .profile dl{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin:0}
+  .profile dl>div{display:flex;flex-direction:column;gap:2px}
+  .profile dt{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  .profile dd{margin:0;font-size:14px}
 </style>
 </head>
 <body>
@@ -460,6 +472,21 @@ function freeOfSet(f){
     if(hasData || x.label.test(txt)) out.push(x.key);
   }
   return out;
+}
+
+// Daten-Sicherheit als reine Funktion (keine DB-Spalte, nur in der Schublade):
+// „Sicher"    = die Ampel beruht auf echten Daten — eine Zutatenliste und/oder Nährwerte sind hinterlegt.
+// „Geschätzt" = die Ampel ist eine Voreinschätzung (z. B. Mischgericht OHNE Zutatenliste/Nährwerte).
+function dataConfidence(f){
+  const hasIngredients = !!(f.ingredients && f.ingredients.trim());
+  const hasNutrition   = !!(f.nutrition   && f.nutrition.trim());
+  if(hasIngredients || hasNutrition){
+    const basis = hasIngredients && hasNutrition ? "Zutatenliste & Nährwerte hinterlegt"
+                : hasIngredients ? "Zutatenliste hinterlegt"
+                : "Nährwerte hinterlegt";
+    return {sicher:true, cls:"sicher", label:"Sicher", sym:"✓", reason:`beruht auf echten Daten — ${basis}`};
+  }
+  return {sicher:false, cls:"geschaetzt", label:"Geschätzt", sym:"~", reason:"Voreinschätzung — keine Zutatenliste/Nährwerte hinterlegt"};
 }
 
 // ── Auth ──
@@ -800,11 +827,32 @@ function renderReasonColored(text){
   }
   return out.join("");
 }
+
+// Detail-Profil (read-only, nur in der Schublade — nicht in der Tabelle): erklärt die
+// berechnete Daten-Sicherheit und fasst die Kerndaten des Lebensmittels auf einen Blick zusammen.
+function profileCard(f){
+  const conf=dataConfidence(f), hk=hayKonform(f.hay_groups);
+  const statusLabel = f.status==="published" ? "Veröffentlicht (live)" : f.status==="draft" ? "Entwurf (noch nicht live)" : (f.status||"—");
+  const srcLabel = f.source==="manual" ? "manuell angelegt" : (f.source||"—");
+  const ampelLabel = (AMPEL.find(([v])=>v===f.ampel)||[null,"—"])[1];
+  const cell=(dt,dd)=>`<div><dt>${dt}</dt><dd>${dd}</dd></div>`;
+  return `<div class="profile is-${conf.cls}">
+    <div class="pv"><span class="pv-badge">${conf.sym} ${conf.label}</span><span class="pv-reason">${esc(conf.reason)}</span></div>
+    <dl>
+      ${cell("Status", esc(statusLabel))}
+      ${cell("Quelle", esc(srcLabel))}
+      ${cell("Geprüft", f.reviewed_by_ricarda?'<span class="reviewed">✓ bestätigt</span>':'<span class="open">offen</span>')}
+      ${cell("Ampel", esc(ampelLabel))}
+      ${cell("Hay-Konformität", hk?(hk.sym+" "+esc(hk.t)):"—")}
+    </dl>
+  </div>`;
+}
 function openDrawer(food){
   current = food || {__new:true,status:"draft",hay_groups:[],allergens:[],intolerances:[]};
   $("#drawerTitle").textContent = food ? food.name : "Neues Lebensmittel";
   $("#saveMsg").textContent=""; const f=current; drawerImageUrl = f.image_url || null;
   $("#drawerBody").innerHTML=`
+    ${food?profileCard(f):""}
     <div class="field"><label>Foto</label>
       <div id="photoPreview"></div>
       <div class="photo-actions">
