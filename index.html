@@ -871,7 +871,7 @@ function openDrawer(food){
     <div class="field"><label>Ampel</label><div class="ampel-row" id="e_ampel">${AMPEL.map(([v,l])=>`<button type="button" data-v="${v}" class="${f.ampel===v?'sel':''}">${l}</button>`).join("")}</div></div>
     <div class="field"><label>Ampel-Begründung</label><div class="prevlabel">Vorschau (Zutat farbig, Erklärung schwarz)</div><div class="rsn-prev" id="prev_reason"></div><textarea id="e_ampel_reason">${esc(f.ampel_reason||"")}</textarea></div>
     <div class="field"><label>Trennkost-Hauptgruppe</label>${drawerChips("hay_groups",HAY,f.hay_groups)}</div>
-    <div class="field"><label>Trennkost-Hinweis</label><textarea id="e_trennkost_note">${esc(f.trennkost_note||"")}</textarea></div>
+    <div class="field"><label>Trennkost-Hinweis</label><textarea id="e_trennkost_note" style="min-height:160px">${esc(f.trennkost_note||"")}</textarea></div>
     <div class="field"><label>Gesundheitlicher Hinweis</label><textarea id="e_health_note">${esc(f.health_note||"")}</textarea></div>
     <div class="field"><label>Hinweise</label><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></div>
     <div class="field"><label>Allergene</label>${drawerChips("allergens",ALLERGENS,f.allergens)}</div>
