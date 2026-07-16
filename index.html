@@ -853,6 +853,16 @@ function renderNoteBold(text){
     line.trim() ? '<div>'+esc(line).replace(NOTE_HL,(_m,pre,kw)=>pre+'<b>'+kw+'</b>')+'</div>' : '<div style="height:6px"></div>'
   ).join("");
 }
+// Trennkost-Hinweis: Urteil (Konform/…) + die Gruppen-Einordnung nach „→" fett
+function renderTrennkostBold(text){
+  if(!text||!text.trim()) return "";
+  return text.split('\n').map(raw=>{
+    if(!raw.trim()) return '<div style="height:6px"></div>';
+    let h=esc(raw).replace(/(nicht konform|bedingt konform|konform)/i,'<b>$1</b>');
+    if(raw.trim().charAt(0)==='•') h=h.replace(/(→\s*)(.+)$/,'$1<b>$2</b>');
+    return '<div>'+h+'</div>';
+  }).join("");
+}
 
 // Detail-Profil (read-only, nur in der Schublade — nicht in der Tabelle): erklärt die
 // berechnete Daten-Sicherheit und fasst die Kerndaten des Lebensmittels auf einen Blick zusammen.
@@ -895,7 +905,7 @@ function openDrawer(food){
     <div class="field"><label>Ampel</label><div class="ampel-row" id="e_ampel">${AMPEL.map(([v,l])=>`<button type="button" data-v="${v}" class="${f.ampel===v?'sel':''}">${l}</button>`).join("")}</div></div>
     <div class="field"><label>Ampel-Begründung</label><div class="prevlabel">Vorschau (Zutat farbig, Erklärung schwarz)</div><div class="rsn-prev" id="prev_reason"></div><textarea id="e_ampel_reason">${esc(f.ampel_reason||"")}</textarea></div>
     <div class="field"><label>Trennkost-Hauptgruppe</label>${drawerChips("hay_groups",HAY,f.hay_groups)}</div>
-    <div class="field"><label>Trennkost-Hinweis</label><textarea id="e_trennkost_note" style="min-height:160px">${esc(f.trennkost_note||"")}</textarea></div>
+    <div class="field"><label>Trennkost-Hinweis</label><div class="rsn-prev" id="prev_trennkost"></div><textarea id="e_trennkost_note" style="min-height:160px">${esc(f.trennkost_note||"")}</textarea></div>
     <div class="field"><label>Gesundheitlicher Hinweis</label><div class="rsn-prev" id="prev_health"></div><textarea id="e_health_note">${esc(f.health_note||"")}</textarea></div>
     <div class="field"><label>Hinweise</label><div class="rsn-prev" id="prev_public"></div><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></div>
     <div class="field"><label>Allergene</label>${drawerChips("allergens",ALLERGENS,f.allergens)}</div>
@@ -912,11 +922,12 @@ function openDrawer(food){
     const zp=$("#prev_zutaten"), rp=$("#prev_reason");
     if(zp) zp.innerHTML=renderZutatenColored(ing,salt,isBio,sugar)||'<span class="muted" style="font-size:12px">— keine Zutaten —</span>';
     if(rp) rp.innerHTML=renderReasonColored($("#e_ampel_reason").value)||'<span class="muted" style="font-size:12px">— keine Begründung —</span>';
-    const hp=$("#prev_health"), pp=$("#prev_public");
+    const hp=$("#prev_health"), pp=$("#prev_public"), tp=$("#prev_trennkost");
     if(hp) hp.innerHTML=renderNoteBold($("#e_health_note").value)||'<span class="muted" style="font-size:12px">— kein Hinweis —</span>';
     if(pp) pp.innerHTML=renderNoteBold($("#e_public_note").value)||'<span class="muted" style="font-size:12px">— kein Hinweis —</span>';
+    if(tp) tp.innerHTML=renderTrennkostBold($("#e_trennkost_note").value)||'<span class="muted" style="font-size:12px">— kein Hinweis —</span>';
   }
-  ["e_ingredients","e_ampel_reason","e_nutrition","e_health_note","e_public_note"].forEach(id=>{const el=$("#"+id); if(el) el.addEventListener("input",refreshPrev);});
+  ["e_ingredients","e_ampel_reason","e_nutrition","e_health_note","e_public_note","e_trennkost_note"].forEach(id=>{const el=$("#"+id); if(el) el.addEventListener("input",refreshPrev);});
   function bindEditToggle(prevId, taId){
     const prev=$("#"+prevId), ta=$("#"+taId);
     if(!prev||!ta) return;
@@ -930,6 +941,7 @@ function openDrawer(food){
   bindEditToggle("prev_reason","e_ampel_reason");
   bindEditToggle("prev_health","e_health_note");
   bindEditToggle("prev_public","e_public_note");
+  bindEditToggle("prev_trennkost","e_trennkost_note");
   refreshPrev();
   setupPhoto();
   $("#scrim").classList.add("show"); $("#drawer").classList.add("show");
