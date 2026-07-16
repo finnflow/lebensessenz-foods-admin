@@ -835,6 +835,25 @@ function renderReasonColored(text){
   return out.join("");
 }
 
+// Wichtige Begriffe in Freitext-Hinweisen fett hervorheben (nur Anzeige-Vorschau, Speichern unverändert)
+const NOTE_HL = new RegExp('(^|[^0-9A-Za-zÀ-ÿ])('+[
+  'Bio-Variante','Bio-Produkte?','Bio-Qualität','Bio-Siegel','ökologische[rn]? Tierhaltung','ökologisch\\w*',
+  'artgerecht\\w*','Antibiotika','Pestizid\\w*','Massentierhaltung',
+  'zugesetzte[rn]? Zucker','Zucker\\w*','künstliche[rn]? Süßstoffe?','Süßstoff\\w*','Süßungsmittel\\w*',
+  'gesättigte[rn]? Fettsäuren?','ungesättigte[rn]? Fettsäuren?','Transfett\\w*','Fettsäuren?',
+  'Omega-3','Omega-6','Palmöl','Palmfett','Aroma\\w*','Maltodextrin','Glutamat','Carrageen','raffiniert\\w*','Nitrit\\w*','Nitrat\\w*',
+  'vollwertig\\w*','unverarbeitet\\w*','naturbelassen\\w*','kaltgepresst\\w*','nativ\\w*',
+  'Vollkorn\\w*','ballaststoff\\w*','nährstoffreich\\w*','fermentiert\\w*','ungesüßt\\w*','ungesättigt\\w*',
+  'Akne','entzündungshemmend','entzündungsfördernd','Entzündung\\w*',
+  'stark verarbeitet','hochverarbeitet\\w*','verarbeitet\\w*','in Maßen','Alkohol\\w*','Koffein\\w*','Salz','Bio\\b'
+].join('|')+')(?![0-9A-Za-zÀ-ÿ])','giu');
+function renderNoteBold(text){
+  if(!text||!text.trim()) return "";
+  return text.split('\n').map(line=>
+    line.trim() ? '<div>'+esc(line).replace(NOTE_HL,(_m,pre,kw)=>pre+'<b>'+kw+'</b>')+'</div>' : '<div style="height:6px"></div>'
+  ).join("");
+}
+
 // Detail-Profil (read-only, nur in der Schublade — nicht in der Tabelle): erklärt die
 // berechnete Daten-Sicherheit und fasst die Kerndaten des Lebensmittels auf einen Blick zusammen.
 function profileCard(f){
@@ -877,8 +896,8 @@ function openDrawer(food){
     <div class="field"><label>Ampel-Begründung</label><div class="prevlabel">Vorschau (Zutat farbig, Erklärung schwarz)</div><div class="rsn-prev" id="prev_reason"></div><textarea id="e_ampel_reason">${esc(f.ampel_reason||"")}</textarea></div>
     <div class="field"><label>Trennkost-Hauptgruppe</label>${drawerChips("hay_groups",HAY,f.hay_groups)}</div>
     <div class="field"><label>Trennkost-Hinweis</label><textarea id="e_trennkost_note" style="min-height:160px">${esc(f.trennkost_note||"")}</textarea></div>
-    <div class="field"><label>Gesundheitlicher Hinweis</label><textarea id="e_health_note">${esc(f.health_note||"")}</textarea></div>
-    <div class="field"><label>Hinweise</label><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></div>
+    <div class="field"><label>Gesundheitlicher Hinweis</label><div class="rsn-prev" id="prev_health"></div><textarea id="e_health_note">${esc(f.health_note||"")}</textarea></div>
+    <div class="field"><label>Hinweise</label><div class="rsn-prev" id="prev_public"></div><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></div>
     <div class="field"><label>Allergene</label>${drawerChips("allergens",ALLERGENS,f.allergens)}</div>
     <div class="field"><label>Unverträglichkeiten</label>${drawerChips("intolerances",INTOL,f.intolerances)}</div>
     <div class="field"><label>Zutaten <small style="color:var(--muted);font-weight:400">(Freitext)</small></label><div class="prevlabel">Vorschau (🟢 förderlich · 🔴 abträglich · 🟠 Gefahr · grau neutral)</div><div class="zut-prev" id="prev_zutaten"></div><textarea id="e_ingredients" placeholder="z. B. Hähnchenfleisch (60%), Paniermehl (Weizen), Pflanzenöl, Salz, Gewürze …">${esc(f.ingredients||"")}</textarea></div>
@@ -893,8 +912,11 @@ function openDrawer(food){
     const zp=$("#prev_zutaten"), rp=$("#prev_reason");
     if(zp) zp.innerHTML=renderZutatenColored(ing,salt,isBio,sugar)||'<span class="muted" style="font-size:12px">— keine Zutaten —</span>';
     if(rp) rp.innerHTML=renderReasonColored($("#e_ampel_reason").value)||'<span class="muted" style="font-size:12px">— keine Begründung —</span>';
+    const hp=$("#prev_health"), pp=$("#prev_public");
+    if(hp) hp.innerHTML=renderNoteBold($("#e_health_note").value)||'<span class="muted" style="font-size:12px">— kein Hinweis —</span>';
+    if(pp) pp.innerHTML=renderNoteBold($("#e_public_note").value)||'<span class="muted" style="font-size:12px">— kein Hinweis —</span>';
   }
-  ["e_ingredients","e_ampel_reason","e_nutrition"].forEach(id=>{const el=$("#"+id); if(el) el.addEventListener("input",refreshPrev);});
+  ["e_ingredients","e_ampel_reason","e_nutrition","e_health_note","e_public_note"].forEach(id=>{const el=$("#"+id); if(el) el.addEventListener("input",refreshPrev);});
   function bindEditToggle(prevId, taId){
     const prev=$("#"+prevId), ta=$("#"+taId);
     if(!prev||!ta) return;
@@ -906,6 +928,8 @@ function openDrawer(food){
   }
   bindEditToggle("prev_zutaten","e_ingredients");
   bindEditToggle("prev_reason","e_ampel_reason");
+  bindEditToggle("prev_health","e_health_note");
+  bindEditToggle("prev_public","e_public_note");
   refreshPrev();
   setupPhoto();
   $("#scrim").classList.add("show"); $("#drawer").classList.add("show");
