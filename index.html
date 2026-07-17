@@ -21,7 +21,7 @@
   .muted{color:var(--muted)}
 
   /* Farbige Zutaten-/Begründungs-Vorschau */
-  .z-good{color:#3f9d54}.z-bad{color:#cf4b3a}.z-warn{color:#d97a1e}.z-neu{color:#8a8276}.z-exp{color:var(--ink)}
+  .z-good{color:#3f9d54}.z-bad{color:#c2921b}.z-warn{color:#cf4b3a}.z-neu{color:#8a8276}.z-exp{color:var(--ink)}
   .zut-prev,.rsn-prev{font-size:13.5px;line-height:1.7;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fdfcfa;margin-bottom:6px;word-break:break-word}
   .rsn-prev div{margin:1px 0}
   .prevlabel{font-size:11px;color:var(--muted);margin:0 0 3px}
@@ -789,8 +789,12 @@ function classifyZutat(tok, salt, isBio, sugar){
   for(const k of Z_BAD)  if(t.includes(k) && k.length>bestLen){ bestLen=k.length; bestCls='bad'; bestKw=k; }
   for(const k of Z_GOOD) if(t.includes(k) && k.length>bestLen){ bestLen=k.length; bestCls='good'; bestKw=k; }
   for(const k of Z_NEU)  if(t.includes(k) && k.length>bestLen){ bestLen=k.length; bestCls='neu'; bestKw=k; }
-  // 5. Süße mengenabhängig: rotes Süße-Wort nur bei nennenswertem Zuckergehalt (> 5 g/100 g); Spur → grau
-  if(bestCls==='bad' && sugar!=null && sugar<=5 && SWEET_KW.some(k=>bestKw.includes(k))) return 'neu';
+  // 5. Süße mengenabhängig (3 Stufen wie die offizielle Ampel): ≤5 g grau (Spur) · 5–22,5 g gelb (abträglich) · ≥22,5 g rot (Gefahr/⚠️)
+  if(bestCls==='bad' && sugar!=null && SWEET_KW.some(k=>bestKw.includes(k))){
+    if(sugar<=5) return 'neu';        // Spur → grau
+    if(sugar>=22.5) return 'warn';    // viel → rot (Gefahr)
+    // 5–22,5 g → bleibt 'bad' → gelb (mittlere Menge, abträglich)
+  }
   return bestCls || 'neu';
 }
 const Z_CLS={good:'z-good',bad:'z-bad',warn:'z-warn',neu:'z-neu'};
@@ -932,7 +936,7 @@ function openDrawer(food){
     <div class="field"><label>Hinweise</label><div class="rsn-prev" id="prev_public"></div><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></div>
     <div class="field"><label>Allergene</label>${drawerChips("allergens",ALLERGENS,f.allergens)}</div>
     <div class="field"><label>Unverträglichkeiten</label>${drawerChips("intolerances",INTOL,f.intolerances)}</div>
-    <div class="field"><label>Zutaten <small style="color:var(--muted);font-weight:400">(Freitext)</small></label><div class="prevlabel">Vorschau (🟢 förderlich · 🔴 abträglich · 🟠 Gefahr · grau neutral)</div><div class="zut-prev" id="prev_zutaten"></div><textarea id="e_ingredients" placeholder="z. B. Hähnchenfleisch (60%), Paniermehl (Weizen), Pflanzenöl, Salz, Gewürze …">${esc(f.ingredients||"")}</textarea></div>
+    <div class="field"><label>Zutaten <small style="color:var(--muted);font-weight:400">(Freitext)</small></label><div class="prevlabel">Vorschau (🟢 förderlich · 🟡 abträglich · 🔴 Gefahr · grau neutral)</div><div class="zut-prev" id="prev_zutaten"></div><textarea id="e_ingredients" placeholder="z. B. Hähnchenfleisch (60%), Paniermehl (Weizen), Pflanzenöl, Salz, Gewürze …">${esc(f.ingredients||"")}</textarea></div>
     <div class="field"><label>Nährwerte <small style="color:var(--muted);font-weight:400">(Freitext, z. B. pro 100 g)</small></label><div class="rsn-prev" id="prev_nutrition"></div><textarea id="e_nutrition" placeholder="z. B. Energie 250 kcal · Fett 14 g (davon ges. 3 g) · KH 18 g (Zucker 1 g) · Eiweiß 12 g · Salz 1,2 g">${esc(f.nutrition||"")}</textarea></div>`;
   $("#e_ampel").querySelectorAll("button").forEach(b=>b.onclick=()=>{$("#e_ampel").querySelectorAll("button").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");});
   $("#drawerBody").querySelectorAll(".chips label").forEach(l=>l.querySelector("input").onchange=e=>l.classList.toggle("on",e.target.checked));
