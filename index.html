@@ -861,14 +861,19 @@ function renderNoteBold(text){
   return text.split('\n').map((line,i)=>{
     const t=line.replace(/\s+$/,'');
     if(!t.trim()) return '<div style="height:6px"></div>';
-    const isBullet = t.trim().charAt(0)==='•';
+    const core = t.trim();
+    const isBullet = core.charAt(0)==='•';
+    // „Zeile ohne • = Über-Überschrift" gilt nur für KURZE Zeilen. Ein langer Satz ohne •
+    // (Alt-Text, noch nicht ins Format umgestellt) wird als normaler Absatz gezeigt – sonst
+    // würde der ganze Satz fett (z. B. Erythrit-/Pestizid-/verarbeitetes-Fleisch-Hinweise).
+    const isHeading = !isBullet && core.length<=44;
     let html = esc(t).replace(/__([^_]+)__/g,'<u>$1</u>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
-    if(isBullet){
-      html = html.replace(NOTE_HL,(_m,pre,qual,kw)=>pre+'<b>'+(qual||'')+kw+'</b>');
-      return '<div>'+html+'</div>';
+    if(isHeading){
+      return '<div style="font-weight:600'+(i?';margin-top:9px':'')+'">'+html+'</div>';
     }
-    // Zeile ohne „•" = Über-Überschrift: ganze Zeile fett, etwas Abstand oben (außer 1. Zeile)
-    return '<div style="font-weight:600'+(i?';margin-top:9px':'')+'">'+html+'</div>';
+    // Stichpunkt ODER langer Fließtext: nur Schlüsselbegriffe fett, Zeile bleibt normal
+    html = html.replace(NOTE_HL,(_m,pre,qual,kw)=>pre+'<b>'+(qual||'')+kw+'</b>');
+    return '<div>'+html+'</div>';
   }).join("");
 }
 // Trennkost-Hinweis: Urteil (Konform/…) + die Gruppen-Einordnung nach „→" fett
