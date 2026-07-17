@@ -836,21 +836,26 @@ function renderReasonColored(text){
 }
 
 // Wichtige Begriffe in Freitext-Hinweisen fett hervorheben (nur Anzeige-Vorschau, Speichern unverändert)
-const NOTE_HL = new RegExp('(^|[^0-9A-Za-zÀ-ÿ])('+[
-  'Bio-Variante','Bio-Produkte?','Bio-Qualität','Bio-Siegel','ökologische[rn]? Tierhaltung','ökologisch\\w*',
-  'artgerecht\\w*','Antibiotika','Pestizid\\w*','Massentierhaltung',
-  'zugesetzte[rn]? Zucker','Zucker\\w*','künstliche[rn]? Süßstoffe?','Süßstoff\\w*','Süßungsmittel\\w*',
-  'gesättigte[rn]? Fettsäuren?','ungesättigte[rn]? Fettsäuren?','Transfett\\w*','Fettsäuren?',
-  'Omega-3','Omega-6','Palmöl','Palmfett','Aroma\\w*','Maltodextrin','Glutamat','Carrageen','raffiniert\\w*','Nitrit\\w*','Nitrat\\w*',
+// Der Mengen-/Verneinungs-Zusatz VOR dem Begriff wird mitgefettet — sonst liest sich
+// „liefert kaum Ballaststoffe" beim Überfliegen wie ein Pluspunkt, obwohl das Gegenteil gemeint ist.
+const NOTE_QUAL = '(?:zu viel|sehr viel|reich an|arm an|frei von|kaum|wenig(?:e[rnms]?)?|viel(?:e[rnms]?)?|hoh(?:e[rnms]?)|hoch|gering(?:e[rnms]?)?|kein(?:e[rnms]?|erlei)?|ohne|voller)';
+const NOTE_HL = new RegExp('(^|[^0-9A-Za-zÀ-ÿ])('+NOTE_QUAL+'\\s+)?('+[
+  'Omega-[36]-Fettsäuren?','Omega-[36]',
+  'gesättigte[rnms]? Fettsäuren?','ungesättigte[rnms]? Fettsäuren?','Transfett\\w*','Fettsäuren?','ungesättigt\\w*',
+  'Bio-[A-Za-zÀ-ÿ]+','Bio\\b',
+  'ökologische[rnms]? Tierhaltung','ökologisch\\w*','artgerecht\\w*','Antibiotika','Pestizid\\w*','Massentierhaltung','Gentechnik',
+  'zugesetzte[rnms]? Zucker','Zucker\\w*','künstliche[rnms]? Süßstoffe?','Süßstoff\\w*','Süßungsmittel\\w*',
+  'Palmöl','Palmfett','Aroma\\w*','Maltodextrin','Glutamat','Carrageen','raffiniert\\w*','Nitrit\\w*','Nitrat\\w*',
   'vollwertig\\w*','unverarbeitet\\w*','naturbelassen\\w*','kaltgepresst\\w*','nativ\\w*',
-  'Vollkorn\\w*','ballaststoff\\w*','nährstoffreich\\w*','fermentiert\\w*','ungesüßt\\w*','ungesättigt\\w*',
+  'Vollkorn\\w*','ballaststoffreich\\w*','Ballaststoffe?','nährstoffreich\\w*','fermentiert\\w*','ungesüßt\\w*',
+  'sekundäre[rnms]? Pflanzenstoffe','Antioxidantien','Polyphenole',
   'Akne','entzündungshemmend','entzündungsfördernd','Entzündung\\w*',
-  'stark verarbeitet','hochverarbeitet\\w*','verarbeitet\\w*','in Maßen','Alkohol\\w*','Koffein\\w*','Salz','Bio\\b'
+  'stark verarbeitet','hochverarbeitet\\w*','verarbeitet\\w*','in Maßen','Alkohol\\w*','Koffein\\w*','Salz'
 ].join('|')+')(?![0-9A-Za-zÀ-ÿ])','giu');
 function renderNoteBold(text){
   if(!text||!text.trim()) return "";
   return text.split('\n').map(line=>
-    line.trim() ? '<div>'+esc(line).replace(NOTE_HL,(_m,pre,kw)=>pre+'<b>'+kw+'</b>')+'</div>' : '<div style="height:6px"></div>'
+    line.trim() ? '<div>'+esc(line).replace(NOTE_HL,(_m,pre,qual,kw)=>pre+'<b>'+(qual||'')+kw+'</b>')+'</div>' : '<div style="height:6px"></div>'
   ).join("");
 }
 // Trennkost-Hinweis: Urteil (Konform/…) + die Gruppen-Einordnung nach „→" fett
