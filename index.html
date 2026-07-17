@@ -854,9 +854,18 @@ const NOTE_HL = new RegExp('(^|[^0-9A-Za-zÀ-ÿ])('+NOTE_QUAL+'\\s+)?('+[
 ].join('|')+')(?![0-9A-Za-zÀ-ÿ])','giu');
 function renderNoteBold(text){
   if(!text||!text.trim()) return "";
-  return text.split('\n').map(line=>
-    line.trim() ? '<div>'+esc(line).replace(NOTE_HL,(_m,pre,qual,kw)=>pre+'<b>'+(qual||'')+kw+'</b>')+'</div>' : '<div style="height:6px"></div>'
-  ).join("");
+  return text.split('\n').map((line,i)=>{
+    const t=line.replace(/\s+$/,'');
+    if(!t.trim()) return '<div style="height:6px"></div>';
+    const isBullet = t.trim().charAt(0)==='•';
+    let html = esc(t).replace(/__([^_]+)__/g,'<u>$1</u>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
+    if(isBullet){
+      html = html.replace(NOTE_HL,(_m,pre,qual,kw)=>pre+'<b>'+(qual||'')+kw+'</b>');
+      return '<div>'+html+'</div>';
+    }
+    // Zeile ohne „•" = Über-Überschrift: ganze Zeile fett, etwas Abstand oben (außer 1. Zeile)
+    return '<div style="font-weight:600'+(i?';margin-top:9px':'')+'">'+html+'</div>';
+  }).join("");
 }
 // Trennkost-Hinweis: Urteil (Konform/…) + die Gruppen-Einordnung nach „→" fett
 function renderTrennkostBold(text){
