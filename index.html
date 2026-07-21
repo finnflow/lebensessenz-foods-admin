@@ -103,6 +103,7 @@
   .dot{display:inline-block;width:11px;height:11px;border-radius:50%}
   .dot.GRUEN{background:var(--gruen)} .dot.GELB{background:var(--gelb)} .dot.ROT{background:var(--rot)} .dot.GRAU{background:var(--grau)}
   .dot.none{background:#d8d2c6;box-shadow:inset 0 0 0 1.5px #c3bba9}
+  .star{font-size:12.5px;line-height:1;margin-left:3px;vertical-align:middle}
   .reviewed{color:var(--gruen);font-weight:700} .open{color:#b9912f}
   .hay-konform{ text-align:center; width:26px; font-size:14px; }
 
@@ -138,6 +139,13 @@
   .drawer footer{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
   .field{margin-bottom:16px}
   .field>label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+  details.field{border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+  details.field>summary{font-size:13px;font-weight:600;cursor:pointer;list-style:none;user-select:none}
+  details.field>summary::-webkit-details-marker{display:none}
+  details.field>summary::before{content:"▸ ";display:inline-block;font-weight:400;color:var(--muted)}
+  details.field[open]>summary::before{content:"▾ "}
+  details.field[open]>summary{margin-bottom:6px}
+  details.field>*:not(summary){margin-top:6px}
   .field input[type=text],.field select,.field textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff}
   .field textarea{min-height:60px;resize:vertical}
   #photoPreview img{max-width:170px;max-height:170px;border-radius:10px;border:1px solid var(--line);object-fit:cover;display:block}
@@ -154,6 +162,9 @@
   .chips label{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);border-radius:999px;font-size:13px;cursor:pointer;background:#fff}
   .chips label.on{background:#f3ece0;border-color:var(--accent)}
   .chips input{display:none}
+  .chip-info{cursor:pointer;color:var(--accent);font-size:13px;margin-left:-3px}
+  .chip-explain{margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fdfcfa;font-size:13px;line-height:1.6}
+  .chip-explain .bul{margin:2px 0}
   .savemsg{color:var(--gruen);font-size:13px;margin-right:auto;align-self:center}
   .savemsg.err{color:var(--rot)}
   #cellpop .ampel-row button.sel{opacity:1;border-width:2px}
@@ -568,7 +579,7 @@ function render(){
     const hk = hayKonform(f.hay_groups);
     tr.innerHTML = `
       <td class="cbcol"><input type="checkbox" class="rowcb" ${selected.has(f.id)?"checked":""}></td>
-      <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}</td>
+      <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}${(f.ampel_reason&&f.ampel_reason.includes('⭐'))?'<span class="star" title="Rohkost/kaltgepresst — besonders schonend verarbeitet">⭐</span>':''}</td>
       <td class="namecell"><b>${esc(f.name)}</b>${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
       <td>${f.brand?esc(f.brand):'<span class="muted">—</span>'}</td>
       <td>${priceCell(f)}</td>
@@ -720,9 +731,51 @@ async function toggleReviewed(food){
 }
 
 // ── Schublade ──
-function drawerChips(name,opts,sel){
-  return `<div class="chips" data-multi="${name}">`+opts.map(o=>{const on=(sel||[]).includes(o);
-    return `<label class="${on?'on':''}"><input type="checkbox" value="${esc(o)}" ${on?'checked':''}>${esc(o)}</label>`;}).join("")+`</div>`;
+function drawerChips(name,opts,sel,explainable){
+  const rows=opts.map(o=>{const on=(sel||[]).includes(o);
+    const info=explainable&&on?` <span class="chip-info" data-cat="${esc(o)}" title="Begründung anzeigen">ⓘ</span>`:"";
+    return `<label class="${on?'on':''}"><input type="checkbox" value="${esc(o)}" ${on?'checked':''}>${esc(o)}</label>${info}`;}).join("");
+  return `<div class="chips" data-multi="${name}">${rows}</div>`+(explainable?`<div class="chip-explain" style="display:none"></div>`:"");
+}
+// Allergen-/Unverträglichkeits-Erklärpanel (Ricarda 2026-07-21): kein neues DB-Feld — beim Klick
+// auf ein Badge die passende(n) Zeile(n) aus der bereits vorhandenen ampel_reason zeigen
+// (Text-Matching zwischen Kategorie-Name und Zutatnamen in der Begründung).
+const ALLERGEN_MATCH_WORDS={
+  "Glutenhaltiges Getreide":["weizen","roggen","gerste","hafer","dinkel","gluten","grieß","griess"],
+  "Weizen":["weizen"],"Roggen":["roggen"],"Gerste":["gerste"],"Hafer":["hafer"],
+  "Milch":["milch","sahne","butter","käse","joghurt","quark","molke","laktose"],
+  "Laktose":["laktose","milchzucker"],"Ei":["ei ","eigelb","eiklar","vollei","eier"],
+  "Soja":["soja"],"Erdnuss":["erdnuss"],"Schalenfrüchte / Nüsse":["mandel","haselnuss","walnuss","cashew","paranuss","pekannuss","pistazie","macadamia","nuss","nüsse"],
+  "Fisch":["fisch","lachs","thunfisch","hering","makrele","sardine","sardelle","kabeljau","seelachs","pangasius","tilapia"],
+  "Krebstiere":["krebs","garnele","shrimp","scampi"],"Weichtiere":["muschel","tintenfisch","calamari","auster"],
+  "Sellerie":["sellerie"],"Senf":["senf"],"Sesam":["sesam"],"Sulfite":["sulfit","schwefel"],"Lupine":["lupine"],
+  "Laktoseintoleranz":["laktose","milchzucker","milch"],"Zöliakie / Gluten":["gluten","weizen","roggen","gerste","hafer"],
+  "Glutensensitivität / Weizensensitivität":["gluten","weizen"],"Fruktosemalabsorption":["fruktose","fructose","fruchtzucker"],
+  "Sorbit-Unverträglichkeit":["sorbit"],"Histaminintoleranz":["histamin"],"Soja-Unverträglichkeit":["soja"],
+};
+function findAllergenLines(reason, cat){
+  const words=ALLERGEN_MATCH_WORDS[cat]||[cat.toLowerCase()];
+  return (reason||"").split("\n").filter(ln=>{
+    const l=ln.trim().toLowerCase();
+    return l.startsWith("•") && words.some(w=>l.includes(w));
+  });
+}
+function bindChipExplain(container){
+  if(!container) return;
+  container.querySelectorAll(".chip-info").forEach(btn=>{
+    btn.onclick=(e)=>{
+      e.preventDefault(); e.stopPropagation();
+      const box=container.querySelector(".chip-explain");
+      const cat=btn.dataset.cat;
+      if(box.style.display!=="none" && box.dataset.cur===cat){ box.style.display="none"; box.dataset.cur=""; return; }
+      const reason=$("#e_ampel_reason")?$("#e_ampel_reason").value:(current.ampel_reason||"");
+      const lines=findAllergenLines(reason, cat);
+      box.innerHTML = lines.length
+        ? `<div class="prevlabel">Passende Zeile(n) aus der Ampel-Begründung für „${esc(cat)}"</div>`+lines.map(l=>'<div class="bul">'+esc(l.trim())+'</div>').join("")
+        : `<div class="muted" style="font-size:12px">Keine passende Zeile in der Ampel-Begründung gefunden — Zutatenliste manuell prüfen.</div>`;
+      box.style.display="block"; box.dataset.cur=cat;
+    };
+  });
 }
 // Bild clientseitig verkleinern (spart Speicher) → kleines JPEG-Blob
 async function resizeImage(file, maxDim=900, quality=0.72){
@@ -832,15 +885,17 @@ function renderReasonColored(text){
   for(const raw of text.split('\n')){
     const s=raw.trim();
     if(!s){ out.push('<div style="height:6px"></div>'); continue; }
-    const m=s.match(/^([\s•👍👎⚠⚪️‍\u{1F3FB}-\u{1F3FF}]*)(.*)$/u);
+    const m=s.match(/^([\s•👍👎⚠⚪⭐️‍\u{1F3FB}-\u{1F3FF}]*)(.*)$/u);
     const lead=m?m[1]:"", content=m?m[2]:s;
     if(lead.includes('👍')) cur='z-good'; else if(lead.includes('👎')) cur='z-bad';
     else if(lead.includes('⚠')) cur='z-warn'; else if(lead.includes('⚪')) cur='z-neu';
     if(!content){ out.push(`<div>${esc(lead)}</div>`); continue; }
     const ci=content.indexOf(':');
+    // **Text** in der Erklärung fett hervorheben (z. B. "kaltgepresst/unerhitzt" bei ⭐-Zutaten)
+    const boldExp = s2=>esc(s2).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
     const inner = ci>0
-      ? `<span class="${cur}">${esc(content.slice(0,ci))}</span><span class="z-exp">${esc(content.slice(ci))}</span>`
-      : `<span class="${cur}">${esc(content)}</span>`;
+      ? `<span class="${cur}">${boldExp(content.slice(0,ci))}</span><span class="z-exp">${boldExp(content.slice(ci))}</span>`
+      : `<span class="${cur}">${boldExp(content)}</span>`;
     out.push(`<div>${esc(lead)}${inner}</div>`);
   }
   return out.join("");
@@ -876,30 +931,57 @@ function renderNoteBold(text){
     const isHeading = !isBullet && core.length<=44;
     let html = esc(t).replace(/__([^_]+)__/g,'<u>$1</u>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
     if(isHeading){
-      return '<div style="font-weight:600'+(i?';margin-top:9px':'')+'">'+html+'</div>';
+      // Überschriften: unterstrichen statt fett (Ricarda 2026-07-20/21 — Fettdruck bleibt
+      // exklusiv den Schlüsselbegriffen im Fließtext vorbehalten, nie beides gleichzeitig)
+      return '<div style="text-decoration:underline'+(i?';margin-top:9px':'')+'">'+html+'</div>';
     }
     // Stichpunkt ODER langer Fließtext: nur Schlüsselbegriffe fett, Zeile bleibt normal
     html = html.replace(NOTE_HL,(_m,pre,qual,kw)=>pre+'<b>'+(qual||'')+kw+'</b>');
     return '<div>'+html+'</div>';
   }).join("");
 }
-// Trennkost-Hinweis: Urteil (Konform/…) + die Gruppen-Einordnung nach „→" fett
+// Trennkost-Hinweis: Urteil (Konform/…) + die Gruppen-Einordnung nach „→" fett,
+// Bausteine-Labels (Kohlenhydrat-Quellen: usw.) unterstrichen als Mini-Überschrift
 function renderTrennkostBold(text){
   if(!text||!text.trim()) return "";
   return text.split('\n').map(raw=>{
     if(!raw.trim()) return '<div style="height:6px"></div>';
     let h=esc(raw).replace(/(nicht konform|bedingt konform|konform)/i,'<b>$1</b>');
-    if(raw.trim().charAt(0)==='•') h=h.replace(/(→\s*)(.+)$/,'$1<b>$2</b>');
+    if(raw.trim().charAt(0)==='•'){
+      h=h.replace(/(→\s*)(.+)$/,'$1<b>$2</b>');
+      h=h.replace(/^(•\s*)([A-ZÄÖÜ][A-Za-zÄÖÜäöüß -]{1,38}?(?:-Quellen?|quellen?|Hülsenfrüchte|Obst)):/,'$1<u>$2</u>:');
+    }
     return '<div>'+h+'</div>';
   }).join("");
 }
-// Nährwerte: die bewertungsrelevanten Werte (Zucker/Salz/gesättigte Fette/Ballaststoffe) fett
-function renderNutritionBold(text){
+// Nährwerte: „Pro 100 g" als unterstrichene Überschrift, darunter jeder Wert in eigener
+// Zeile als „Name: Wert" (Name fett, Wert normal) — Text bleibt Freitext, nur die Anzeige
+// wird strukturiert geparst (Format s. reason_from_ingredients/Admin: „pro 100 g: X kcal, Fett Y g (ges. Z g), …").
+function renderNaehrwerteBold(text){
   if(!text||!text.trim()) return "";
-  const re=/((?:Zucker|Salz|Ballaststoffe|ges\.|gesättigte?)\s*[\d.,]+\s*(?:mg|g|kcal|kJ))/gi;
-  return text.split('\n').map(line=>
-    line.trim() ? '<div>'+esc(line).replace(re,'<b>$1</b>')+'</div>' : '<div style="height:6px"></div>'
-  ).join("");
+  let t = text.trim().replace(/^pro\s*100\s*g\s*:\s*/i,'');
+  const grab = re => { const m = t.match(re); return m ? m[1].trim() : null; };
+  const kcal     = grab(/([\d.,]+\s*kcal)/i);
+  const fett     = grab(/Fett\s+([\d.,]+\s*g(?:\s*\([^)]*\))?)/i);
+  const kh       = grab(/K(?:H|ohlenhydrate)\s+([\d.,]+\s*g(?:\s*\([^)]*\))?)/i);
+  const ballast  = grab(/Ballaststoffe\s+([\d.,]+\s*g)/i);
+  const eiweiss  = grab(/Eiwei(?:ß|ss)\s+([\d.,]+\s*g)/i);
+  const salz     = grab(/Salz\s+([\d.,]+\s*g)/i);
+  const zuckerSolo = !kh ? grab(/Zucker\s+([\d.,]+\s*g)/i) : null;
+
+  const rows=[];
+  if(kcal) rows.push(['Kalorien', kcal]);
+  if(fett) rows.push(['Fett', fett.replace(/\(ges\.?\s*([\d.,]+\s*g)\)/i,'(davon gesättigt: $1)')]);
+  if(kh) rows.push(['Kohlenhydrate', kh.replace(/\(Zucker\s*([\d.,]+\s*g)\)/i,'(davon Zucker: $1)')]);
+  if(zuckerSolo) rows.push(['Zucker', zuckerSolo]);
+  if(ballast) rows.push(['Ballaststoffe', ballast]);
+  if(eiweiss) rows.push(['Eiweiß', eiweiss]);
+  if(salz) rows.push(['Salz', salz]);
+
+  if(!rows.length) return '<div>'+esc(text)+'</div>'; // unbekanntes Format: unverändert anzeigen
+
+  return '<div style="text-decoration:underline">Pro 100 g</div>'
+    + rows.map(([label,val])=>'<div><b>'+esc(label)+':</b> '+esc(val)+'</div>').join('');
 }
 
 // Detail-Profil (read-only, nur in der Schublade — nicht in der Tabelle): erklärt die
@@ -941,17 +1023,18 @@ function openDrawer(food){
     <div class="field"><label>Kategorie</label><select id="e_category"><option value="">— wählen —</option>${CATEGORIES.map(c=>`<option ${f.category===c?'selected':''}>${esc(c)}</option>`).join("")}</select></div>
     <div class="field"><label>Vegan / vegetarisch / tierisch</label><select id="e_vegan"><option value="">— wählen —</option>${VEGAN.map(v=>`<option ${f.vegan===v?'selected':''}>${esc(v)}</option>`).join("")}</select></div>
     <div class="field"><label>Ampel</label><div class="ampel-row" id="e_ampel">${AMPEL.map(([v,l])=>`<button type="button" data-v="${v}" class="${f.ampel===v?'sel':''}">${l}</button>`).join("")}</div></div>
-    <div class="field"><label>Ampel-Begründung</label><div class="prevlabel">Vorschau (Zutat farbig, Erklärung schwarz)</div><div class="rsn-prev" id="prev_reason"></div><textarea id="e_ampel_reason">${esc(f.ampel_reason||"")}</textarea></div>
+    <details class="field" open><summary>Ampel-Begründung</summary><div class="prevlabel">Vorschau (Zutat farbig, Erklärung schwarz)</div><div class="rsn-prev" id="prev_reason"></div><textarea id="e_ampel_reason">${esc(f.ampel_reason||"")}</textarea></details>
     <div class="field"><label>Trennkost-Hauptgruppe</label>${drawerChips("hay_groups",HAY,f.hay_groups)}</div>
-    <div class="field"><label>Trennkost-Hinweis</label><div class="rsn-prev" id="prev_trennkost"></div><textarea id="e_trennkost_note" style="min-height:160px">${esc(f.trennkost_note||"")}</textarea></div>
-    <div class="field"><label>Gesundheitlicher Hinweis</label><div class="rsn-prev" id="prev_health"></div><textarea id="e_health_note">${esc(f.health_note||"")}</textarea></div>
-    <div class="field"><label>Hinweise</label><div class="rsn-prev" id="prev_public"></div><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></div>
-    <div class="field"><label>Allergene</label>${drawerChips("allergens",ALLERGENS,f.allergens)}</div>
-    <div class="field"><label>Unverträglichkeiten</label>${drawerChips("intolerances",INTOL,f.intolerances)}</div>
-    <div class="field"><label>Zutaten <small style="color:var(--muted);font-weight:400">(Freitext)</small></label><div class="prevlabel">Vorschau (🟢 förderlich · 🟡 abträglich · 🔴 Gefahr · grau neutral)</div><div class="zut-prev" id="prev_zutaten"></div><textarea id="e_ingredients" placeholder="z. B. Hähnchenfleisch (60%), Paniermehl (Weizen), Pflanzenöl, Salz, Gewürze …">${esc(f.ingredients||"")}</textarea></div>
-    <div class="field"><label>Nährwerte <small style="color:var(--muted);font-weight:400">(Freitext, z. B. pro 100 g)</small></label><div class="rsn-prev" id="prev_nutrition"></div><textarea id="e_nutrition" placeholder="z. B. Energie 250 kcal · Fett 14 g (davon ges. 3 g) · KH 18 g (Zucker 1 g) · Eiweiß 12 g · Salz 1,2 g">${esc(f.nutrition||"")}</textarea></div>`;
+    <details class="field" open><summary>Trennkost-Hinweis</summary><div class="rsn-prev" id="prev_trennkost"></div><textarea id="e_trennkost_note" style="min-height:160px">${esc(f.trennkost_note||"")}</textarea></details>
+    <details class="field" open><summary>Gesundheitlicher Hinweis</summary><div class="rsn-prev" id="prev_health"></div><textarea id="e_health_note">${esc(f.health_note||"")}</textarea></details>
+    <details class="field"><summary>Hinweise</summary><div class="rsn-prev" id="prev_public"></div><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></details>
+    <div class="field"><label>Allergene</label>${drawerChips("allergens",ALLERGENS,f.allergens,true)}</div>
+    <div class="field"><label>Unverträglichkeiten</label>${drawerChips("intolerances",INTOL,f.intolerances,true)}</div>
+    <details class="field" open><summary>Zutaten <small style="color:var(--muted);font-weight:400">(Freitext)</small></summary><div class="prevlabel">Vorschau (🟢 förderlich · 🟡 abträglich · 🔴 Gefahr · grau neutral)</div><div class="zut-prev" id="prev_zutaten"></div><textarea id="e_ingredients" placeholder="z. B. Hähnchenfleisch (60%), Paniermehl (Weizen), Pflanzenöl, Salz, Gewürze …">${esc(f.ingredients||"")}</textarea></details>
+    <details class="field" open><summary>Nährwerte <small style="color:var(--muted);font-weight:400">(Freitext, z. B. pro 100 g)</small></summary><div class="rsn-prev" id="prev_nutrition"></div><textarea id="e_nutrition" placeholder="z. B. Energie 250 kcal · Fett 14 g (davon ges. 3 g) · KH 18 g (Zucker 1 g) · Eiweiß 12 g · Salz 1,2 g">${esc(f.nutrition||"")}</textarea></details>`;
   $("#e_ampel").querySelectorAll("button").forEach(b=>b.onclick=()=>{$("#e_ampel").querySelectorAll("button").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");});
   $("#drawerBody").querySelectorAll(".chips label").forEach(l=>l.querySelector("input").onchange=e=>l.classList.toggle("on",e.target.checked));
+  $("#drawerBody").querySelectorAll(".chip-explain").forEach(box=>bindChipExplain(box.parentElement));
   function refreshPrev(){
     const nutTxt=$("#e_nutrition")?$("#e_nutrition").value:(f.nutrition||"");
     const salt=saltGrams(nutTxt), sugar=sugarGrams(nutTxt), fat=fatGrams(nutTxt);
@@ -966,7 +1049,7 @@ function openDrawer(food){
     if(pp) pp.innerHTML=renderNoteBold($("#e_public_note").value)||'<span class="muted" style="font-size:12px">— kein Hinweis —</span>';
     if(tp) tp.innerHTML=renderTrennkostBold($("#e_trennkost_note").value)||'<span class="muted" style="font-size:12px">— kein Hinweis —</span>';
     const np=$("#prev_nutrition");
-    if(np) np.innerHTML=renderNutritionBold(nutTxt)||'<span class="muted" style="font-size:12px">— keine Nährwerte —</span>';
+    if(np) np.innerHTML=renderNaehrwerteBold(nutTxt)||'<span class="muted" style="font-size:12px">— keine Nährwerte —</span>';
   }
   ["e_ingredients","e_ampel_reason","e_nutrition","e_health_note","e_public_note","e_trennkost_note"].forEach(id=>{const el=$("#"+id); if(el) el.addEventListener("input",refreshPrev);});
   function bindEditToggle(prevId, taId){
