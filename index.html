@@ -845,7 +845,7 @@ function classifyZutat(tok, salt, isBio, sugar, fat){
   if(t.includes('kann spuren')) return 'neu';
   // 2. WARN hat höchste Priorität
   // 3. Salz mengenabhängig (nur generisches "Salz"/"Speisesalz"/"Kochsalz", nicht Pökelsalz/Schmelzsalz etc.)
-  if(/\bsalz\b/.test(t) && !t.includes('pökelsalz') && !t.includes('schmelzsalz') && !t.includes('meersalz') && !t.includes('steinsalz') && !t.includes('jodsalz') && !t.includes('siedesalz') && !t.includes('würzsalz') && !t.includes('alpensalz') && !t.includes('kräutersalz') && !t.includes('rauchsalz') && !t.includes('salzsäure')){
+  if(/\bsalz\b/.test(t) && !t.includes('pökelsalz') && !t.includes('schmelzsalz') && !t.includes('würzsalz') && !t.includes('kräutersalz') && !t.includes('rauchsalz') && !t.includes('salzsäure')){
     return (salt!=null && salt>1.5) ? 'bad' : 'neu';
   }
   // 3b. Mais-Familie: neutral, aber bei Bio (Produkt-Bio oder Bio-Sternchen) grün — Bio-Mais ist gentechnikfrei
