@@ -749,9 +749,15 @@ const ALLERGEN_MATCH_WORDS={
   "Fisch":["fisch","lachs","thunfisch","hering","makrele","sardine","sardelle","kabeljau","seelachs","pangasius","tilapia"],
   "Krebstiere":["krebs","garnele","shrimp","scampi"],"Weichtiere":["muschel","tintenfisch","calamari","auster"],
   "Sellerie":["sellerie"],"Senf":["senf"],"Sesam":["sesam"],"Sulfite":["sulfit","schwefel"],"Lupine":["lupine"],
-  "Laktoseintoleranz":["laktose","milchzucker","milch"],"Zöliakie / Gluten":["gluten","weizen","roggen","gerste","hafer"],
-  "Glutensensitivität / Weizensensitivität":["gluten","weizen"],"Fruktosemalabsorption":["fruktose","fructose","fruchtzucker"],
-  "Sorbit-Unverträglichkeit":["sorbit"],"Histaminintoleranz":["histamin"],"Soja-Unverträglichkeit":["soja"],
+  "Laktoseintoleranz":["laktose","milchzucker","milch","molke","sahne","käse","joghurt","quark"],
+  "Zöliakie / Gluten":["gluten","weizen","roggen","gerste","hafer","dinkel","grieß","malz"],
+  "Glutensensitivität / Weizensensitivität":["gluten","weizen","dinkel"],
+  // Typische AUSLÖSER-Zutaten je Intoleranz (Befund Z): das Panel findet die Zeile,
+  // sobald die Begründung die Zutat nennt — nicht nur bei wörtlicher Nennung des Stoffs.
+  "Fruktosemalabsorption":["fruktose","fructose","fruchtzucker","honig","agave","fruchtsaftkonzentrat","saftkonzentrat","glukose-fruktose","fruktose-glukose","invertzucker","apfel","birne","mango","kirsche","trockenfrucht","rosinen","dattel","sirup"],
+  "Sorbit-Unverträglichkeit":["sorbit","e420","birne","pflaume","trockenobst","apfel","aprikose"],
+  "Histaminintoleranz":["histamin","gereift","salami","rohwurst","schinken","räucher","geräuchert","sauerkraut","essig","tomate","spinat","avocado","nüsse","nuss","cashew","walnuss","erdnuss","kakao","schokolade","fisch","thunfisch","makrele","sardelle","hefeextrakt","sojasauce","parmesan","emmentaler","cheddar","camembert"],
+  "Soja-Unverträglichkeit":["soja","tofu","tempeh","edamame"],
 };
 function findAllergenLines(reason, cat){
   const words=ALLERGEN_MATCH_WORDS[cat]||[cat.toLowerCase()];
@@ -816,23 +822,28 @@ function setupPhoto(){
 }
 /* ===== Farbige Zutaten-Einordnung (gesundheitsförderlich/-abträglich/Gefahr/neutral) ===== */
 const Z_WARN=['aspartam','acesulfam','cyclamat','saccharin','sucralose','e 950','e950','e 951','e951','e 952','e952','e 954','e954','e 955','e955','neotam','advantam','glutamat','mononatriumglutamat','geschmacksverstärker','e 621','e621','dinatriuminosinat','dinatriumguanylat','carrageen','e 407','e407','titandioxid','e 171','e171','nitritpökel','pökelsalz','natriumnitrit','kaliumnitrat','e249','e 249','e252','e 252','erythrit','tartrazin','azorubin','chinolingelb','cochenillerot','allurarot','transfett','butylhydroxyanisol','butylhydroxytoluol','bha','bht'];
-const Z_BAD=['zucker','invertzucker','glukosesirup','glucosesirup','glukose','glucose','fruktose','fructose','dextrose','traubenzucker','maltodextrin','dextrin','dicksaft','reissirup','reissüße','agavendicksaft','honig','sirup','maltose','maltit','xylit','sorbit','isomalt','mannit','fruchtsaftkonzentrat','saftkonzentrat','apfelsaftkonzentrat','birnensaftkonzentrat','traubensaftkonzentrat','fruchtsüße','apfelsaft','orangensaft','traubensaft','birnensaft','mangosaft','ananassaft','grapefruitsaft','multivitaminsaft','multifruchtsaft','mehrfruchtsaft','multisaft','frühstückssaft','aroniasaft','cranberrysaft','granatapfelsaft','holunderbeersaft','sanddornsaft','johannisbeersaft','schwarze johannisbeere','acerolasaft','sauerkirschsaft','kirschsaft','pfirsichsaft','aprikosensaft','fruchtsaft','obstsaft','fruchtnektar','nektar','muttersaft','rohrzucker','rohrohrzucker','rübenzucker','karamell','sonnenblumenöl','rapsöl','distelöl','sojaöl','maiskeimöl','traubenkernöl','baumwollsaatöl','sesamöl','palmöl','palmfett','palmkern','pflanzenfett','pflanzliche fette','pflanzliches öl','pflanzliche öle','sheafett','butterschmalz nicht-bio','rinderfett','rindertalg','talg','schweinefett','schweineschmalz','geflügelfett','hühnerfett','gänsefett','entenfett','speckfett','bauchfett','weizenmehl','weißmehl','auszugsmehl','hartweizengrieß','hartweizengriess','dinkelmehl','dinkelmehl type 630','dinkelmehl type 812','dinkelmehl type 1050','weizenstärke','modifizierte stärke','modifizierte maisstärke','wachsmaisstärke','gehärtet','ganz gehärtet','vollgehärtet','fully hydrogenated','partiell gehärtet','teilgehärtet','teilweise gehärtet','vanillin','ethylvanillin','sojaprotein','sojaeiweiß','sojaeiweißkonzentrat','sojaeiweißisolat','weizenprotein','weizengluten','seitan','aroma','aromen','hefeextrakt','gerstenmalzextrakt','gerstenmalzmehl','malzextrakt','weizenmalzmehl','vollmilchschokolade','weiße schokolade','schokolade','schweinefleisch','rindfleisch','geflügelfleisch','hähnchenfleisch','putenfleisch','salami','wurst','schinken','speck','bacon','mortadella','lyoner','würste','fleischklöß','rauch','raucharoma','geräuchert','frittiert','frittier','panade','paniert','würze','flüssigwürze','aufgeschlossenes pflanzeneiweiß','hydrolysiert','vollmilchpulver','magermilchpulver','milchpulver','sahnepulver','molkenpulver','molkepulver','molkenerzeugnis','butterreinfett','süßmolkenpulver','milchzucker','laktose','frischkäse','grana padano','parmigiano','parmesan','mozzarella','edamer','schmelzkäse','milch','sahne','butter','käse','joghurt','quark','phosphat','phosphorsäure','polyphosphat','triphosphat','diphosphat','natriumphosphat','kaliumphosphat','calciumphosphat','schmelzsalz','e450','e 450','e451','e 451','e452','e 452','e338','e 338','e339','e 339','e340','e 340','e341','e 341','calciumpropionat','lachs','zuchtlachs','pangasius','tilapia','garnele','garnelen','shrimp','shrimps','scampi','ricotta','mascarpone','feta','gouda','schafskäse','ziegenkäse','camembert','emmentaler','bergkäse','hüttenkäse','gorgonzola','pecorino','halloumi','burrata','cheddar'];
-const Z_GOOD=['vollkorn','haferflocke','hafermehl','hafervollkorn','naturreis','vollkornreis','vollkornmehl','vollkornschrot','grünkern','mandel','haselnuss','walnuss','cashew','paranuss','pekannuss','erdnuss','pistazie','macadamia','pinienkern','maroni','esskastanie','nuss','leinsam','leinsaat','chiasam','kürbiskern','sonnenblumenkern','sesam','hanfsam','hanfsaat','schwarzkümmel','kichererbse','linsen','beluga','bohne','sojabohne','erbsen','hülsenfrucht','inulin','flohsamen','ballaststoff','ballaststoffmischung','akazienfaser','zichorienfaser','zichorien','oligofruktose','psyllium','apfelfaser','zitrusfaser','tapiokafaser','haferfaser','bambusfaser','maisfaser','lösliche maisfaser','zuckerrübenfaser','rübenfaser','haferkleie','weizenkleie','polyphenol','tapiokastärke','reisstärke','kartoffelstärke','maisstärke','kartoffelflocke','kartoffelflocken','reismehl','reisvollkornmehl','erbsenprotein','reisprotein','ackerbohnenprotein','hanfprotein','sonnenblumenprotein','olivenöl','natives olivenöl','leinöl','walnussöl','hanföl','avocadoöl','fermentiert','natursauerteig','sauerteig','joghurtkultur','milchsäurekultur','kulturen','sauerkraut','kimchi','tempeh','miso','reifekultur','starterkultur','datteln','dattelpaste','dattelmark','dattelpulver','fruchtmark','apfelmark','obstpulver','tomate','karotte','möhre','paprika','zwiebel','spinat','brokkoli','gemüse','champignon','steinpilz','shiitake','mu-err','kürbis','rote bete','kurkuma','ingwer','knoblauch','steviablätter','steviolglycosid','grüntee','schwarztee','matcha','kakaomasse','kakaopulver','fettarmes kakaopulver','kakaonibs','kakaobohnen','bitterschokolade','zartbitterschokolade','apfel','birne','banane','bananenflocken','mango','ananas','himbeere','erdbeere','heidelbeere','blaubeere','johannisbeere','kirsche','pflaume','feige','aprikose','cranberry','rosinen','sultaninen','pfirsich','granatapfel','aronia','acai','goji','sellerie','fenchel','lauch','porree','zucchini','aubergine','blumenkohl','kohlrabi','grünkohl','spargel','artischocke','avocado','süßkartoffel','pastinake','buchweizen','quinoa','hirse','amaranth','kokosmehl','kokosflocken','kokosraspel','kokosnuss','kokoswasser','kokosextrakt','liebstöckel','schnittlauch','sprosse','keimling','mungbohnenkeim','bockshornklee','kümmel','schafgarbe','löwenzahn','hagebutte','holunder','sanddorn','aceto balsamico','condimento','tamari','meersalz unraffiniert','zimt','pfeffer','basilikum','oregano','thymian','rosmarin','petersilie','koriander','muskat','nelke','kreuzkümmel','chili','dill','lorbeer','majoran','salbei','kardamom','curry','gewürz','gewürze','kräuter','kräutermischung','heilkräuter','vanille','vanilleextrakt','bourbon vanille','bourbonvanille','bourbon-vanille','spirulina','paprikaextrakt','rote bete pulver','karottenkonzentrat','gurke','salatgurke','essiggurke','pfefferschote','pfefferschoten','peperoncini','pfefferoni','sardine','sardinen','sardelle','sardellen','anchovis','makrele','hering','matjes','sprotte','thunfisch','seelachs','wildlachs','fischöl','rhabarber','kartoffel','äpfel','nüsse','melone','traube','orange','mandarine','clementine','kiwi','papaya','guave','maracuja','passionsfrucht','litschi','kaki','quitte','mirabelle','brombeere','stachelbeere','preiselbeere','nektarine','olive','rettich','radieschen','rucola','feldsalat','kopfsalat','blattsalat','eisbergsalat','endivie','mangold','chinakohl','weißkohl','rotkohl','spitzkohl','wirsing','rosenkohl','schalotte','kresse','topinambur','schwarzwurzel','steckrübe','mungbohnenstärke','mungobohnenstärke','bohnenstärke','erbsenstärke','ackerbohnenstärke','hülsenfruchtstärke','mais','zuckermais','gemüsemais','maiskörner','maiskolben','himbeer','erdbeer','heidelbeer','blaubeer','johannisbeer','kirsch'];
-const Z_NEU=['kakaobutter','kokosöl','kokosfett','kokosnussöl','sheabutter','wasser','wasser*','quellwasser','säuerungsmittel','citronensäure','zitronensäure','säureregulator','natriumcitrat','natriumcitrate','natriumacetat','ascorbinsäure','antioxidationsmittel','antioxidans','tocopherol','beta-carotin','vitamin','vitaminmischung','pantothensäure','thiamin','riboflavin','niacin','biotin','folsäure','cobalamin','pyridoxin','retinol','calciferol','pektin','apfelpektin','guarkernmehl','johannisbrotkernmehl','xanthan','verdickungsmittel','geliermittel','gummi arabicum','cellulose','hydroxypropylmethylcellulose','lecithin','sojalecithin','sonnenblumenlecithin','emulgator','diglyceride','monoglyceride','mono- und diglyceride','glycerin','feuchthaltemittel','kohlensäure','backtriebmittel','natriumhydrogencarbonat','ammoniumhydrogencarbonat','ammoniumcarbonat','natriumcarbonat','natron','hirschhornsalz','weinstein','natriumhydroxid','sojasauce','shoyu','milcheiweiß','milchprotein','molkenprotein','calciumcaseinat','calciumchlorid','calciumsulfat','calciumcarbonat','calciumcitrat','kokosmilch','kokoscreme','kokosmark','eier','ei ','eigelb','eiklar','vollei','speisesalz','meersalz','steinsalz','jodsalz','tapioka','maismehl','maisgrieß','maisgriess','gelatine','agar','agar-agar','schaumbildner','farbstoff','färbender pflanzenextrakt','färbendes lebensmittel','färbendes konzentrat','stabilisator','trennmittel','siliciumdioxid','magnesiumsalz','konservierungsstoff','kaliumsorbat','sorbinsäure','sorbat','phenylalanin','reisextrakt','reisextraktpulver','schaum','würzextrakt','gewürzextrakt','reisgrieß','dinkelgrieß','weizengrieß','milchsäure','hafermilch','mandelmilch','sojamilch','reismilch','kokosnussmilch','cashewmilch','haselnussmilch','dinkelmilch','erbsenmilch','lupinenmilch','hanfmilch','nussmilch','pflanzenmilch','getreidemilch','haferdrink','mandeldrink','sojadrink','reisdrink','kokosdrink','cashewdrink','dinkeldrink','erbsendrink','hanfdrink','pflanzendrink','getreidedrink','nussdrink','sojajoghurt','kokosjoghurt','haferjoghurt','mandeljoghurt','cashewjoghurt','lupinenjoghurt','pflanzenjoghurt','hafersahne','sojasahne','reissahne','kokossahne','cashewsahne','pflanzensahne','soja cuisine','hafer cuisine','sojaquark','lupinenquark','pflanzenquark','butternut','butterkürbis','mandelbutter','cashewbutter','kürbisbutter','mandelkäse','cashewkäse','hefekäse'];
+const Z_BAD=['zucker','invertzucker','glukosesirup','glucosesirup','glukose','glucose','fruktose','fructose','dextrose','traubenzucker','maltodextrin','dextrin','dicksaft','reissirup','reissüße','agavendicksaft','honig','sirup','maltose','maltit','xylit','sorbit','isomalt','mannit','fruchtsaftkonzentrat','saftkonzentrat','apfelsaftkonzentrat','birnensaftkonzentrat','traubensaftkonzentrat','fruchtsüße','apfelsaft','orangensaft','traubensaft','birnensaft','mangosaft','ananassaft','grapefruitsaft','multivitaminsaft','multifruchtsaft','mehrfruchtsaft','multisaft','frühstückssaft','aroniasaft','cranberrysaft','granatapfelsaft','holunderbeersaft','sanddornsaft','johannisbeersaft','schwarze johannisbeere','acerolasaft','sauerkirschsaft','kirschsaft','pfirsichsaft','aprikosensaft','fruchtsaft','obstsaft','fruchtnektar','nektar','muttersaft','melasse','rohrzucker','rohrohrzucker','rübenzucker','karamell','sonnenblumenöl','rapsöl','distelöl','sojaöl','maiskeimöl','traubenkernöl','baumwollsaatöl','sesamöl','palmöl','palmfett','palmkern','pflanzenfett','pflanzliche fette','pflanzliches öl','pflanzliche öle','sheafett','butterschmalz nicht-bio','rinderfett','rindertalg','talg','schweinefett','schweineschmalz','geflügelfett','hühnerfett','gänsefett','entenfett','speckfett','bauchfett','weizenmehl','weißmehl','auszugsmehl','hartweizengrieß','hartweizengriess','dinkelmehl','dinkelmehl type 630','dinkelmehl type 812','dinkelmehl type 1050','weizenstärke','modifizierte stärke','modifizierte maisstärke','wachsmaisstärke','gehärtet','ganz gehärtet','vollgehärtet','fully hydrogenated','partiell gehärtet','teilgehärtet','teilweise gehärtet','vanillin','ethylvanillin','sojaprotein','sojaeiweiß','sojaeiweißkonzentrat','sojaeiweißisolat','weizenprotein','weizengluten','seitan','aroma','aromen','hefeextrakt','gerstenmalzextrakt','gerstenmalzmehl','malzextrakt','weizenmalzmehl','vollmilchschokolade','weiße schokolade','schokolade','schweinefleisch','rindfleisch','geflügelfleisch','hähnchenfleisch','putenfleisch','salami','wurst','schinken','speck','bacon','mortadella','lyoner','würste','fleischklöß','rauch','raucharoma','geräuchert','frittiert','frittier','panade','paniert','würze','flüssigwürze','aufgeschlossenes pflanzeneiweiß','hydrolysiert','vollmilchpulver','magermilchpulver','milchpulver','sahnepulver','molkenpulver','molkepulver','molkenerzeugnis','butterreinfett','süßmolkenpulver','milchzucker','laktose','frischkäse','grana padano','parmigiano','parmesan','mozzarella','edamer','schmelzkäse','milch','sahne','butter','käse','joghurt','quark','phosphat','phosphorsäure','polyphosphat','triphosphat','diphosphat','natriumphosphat','kaliumphosphat','calciumphosphat','schmelzsalz','e450','e 450','e451','e 451','e452','e 452','e338','e 338','e339','e 339','e340','e 340','e341','e 341','calciumpropionat','lachs','zuchtlachs','pangasius','tilapia','garnele','garnelen','shrimp','shrimps','scampi','ricotta','mascarpone','feta','gouda','schafskäse','ziegenkäse','camembert','emmentaler','bergkäse','hüttenkäse','gorgonzola','pecorino','halloumi','burrata','cheddar'];
+const Z_GOOD=['vollkorn','haferflocke','hafermehl','hafervollkorn','naturreis','vollkornreis','vollkornmehl','vollkornschrot','grünkern','mandel','haselnuss','walnuss','cashew','paranuss','pekannuss','erdnuss','pistazie','macadamia','pinienkern','maroni','esskastanie','nuss','leinsam','leinsaat','chiasam','kürbiskern','sonnenblumenkern','sesam','hanfsam','hanfsaat','schwarzkümmel','kichererbse','linsen','beluga','bohne','sojabohne','erbsen','hülsenfrucht','inulin','flohsamen','ballaststoff','ballaststoffmischung','akazienfaser','zichorienfaser','zichorien','oligofruktose','psyllium','apfelfaser','zitrusfaser','tapiokafaser','haferfaser','bambusfaser','maisfaser','lösliche maisfaser','zuckerrübenfaser','rübenfaser','haferkleie','weizenkleie','polyphenol','tapiokastärke','reisstärke','kartoffelstärke','maisstärke','kartoffelflocke','kartoffelflocken','reismehl','reisvollkornmehl','erbsenprotein','reisprotein','ackerbohnenprotein','hanfprotein','sonnenblumenprotein','olivenöl','natives olivenöl','leinöl','walnussöl','hanföl','avocadoöl','fermentiert','natursauerteig','sauerteig','joghurtkultur','milchsäurekultur','kulturen','sauerkraut','kimchi','tempeh','miso','reifekultur','starterkultur','datteln','dattelpaste','dattelmark','dattelpulver','fruchtmark','apfelmark','obstpulver','tomate','karotte','möhre','paprika','zwiebel','spinat','brokkoli','gemüse','champignon','steinpilz','shiitake','mu-err','kürbis','rote bete','kurkuma','ingwer','knoblauch','steviablätter','steviolglycosid','grüntee','schwarztee','matcha','kakaomasse','kakaopulver','fettarmes kakaopulver','kakaonibs','kakaobohnen','bitterschokolade','zartbitterschokolade','apfel','birne','banane','bananenflocken','mango','ananas','himbeere','erdbeere','heidelbeere','blaubeere','johannisbeere','kirsche','pflaume','feige','aprikose','cranberry','rosinen','sultaninen','pfirsich','granatapfel','aronia','acai','goji','sellerie','fenchel','lauch','porree','zucchini','aubergine','blumenkohl','kohlrabi','grünkohl','spargel','artischocke','avocado','süßkartoffel','pastinake','buchweizen','quinoa','hirse','amaranth','kokosmehl','kokosflocken','kokosraspel','kokosnuss','kokoswasser','kokosextrakt','liebstöckel','schnittlauch','sprosse','keimling','mungbohnenkeim','bockshornklee','kümmel','schafgarbe','löwenzahn','hagebutte','holunder','sanddorn','aceto balsamico','condimento','tamari','meersalz unraffiniert','zimt','pfeffer','basilikum','oregano','thymian','rosmarin','petersilie','koriander','muskat','nelke','kreuzkümmel','chili','dill','lorbeer','majoran','salbei','kardamom','curry','gewürz','gewürze','kräuter','kräutermischung','heilkräuter','vanille','vanilleextrakt','bourbon vanille','bourbonvanille','bourbon-vanille','spirulina','paprikaextrakt','rote bete pulver','karottenkonzentrat','gurke','salatgurke','essiggurke','pfefferschote','pfefferschoten','peperoncini','pfefferoni','sardine','sardinen','sardelle','sardellen','anchovis','makrele','hering','matjes','sprotte','thunfisch','seelachs','wildlachs','fischöl','rhabarber','kartoffel','äpfel','nüsse','melone','traube','orange','mandarine','clementine','kiwi','papaya','guave','maracuja','passionsfrucht','litschi','kaki','quitte','mirabelle','brombeere','stachelbeere','preiselbeere','nektarine','olive','rettich','radieschen','rucola','feldsalat','kopfsalat','blattsalat','eisbergsalat','endivie','mangold','chinakohl','weißkohl','rotkohl','spitzkohl','wirsing','rosenkohl','schalotte','kresse','topinambur','schwarzwurzel','steckrübe','mungbohnenstärke','mungobohnenstärke','bohnenstärke','erbsenstärke','ackerbohnenstärke','hülsenfruchtstärke','mais','zuckermais','gemüsemais','maiskörner','maiskolben','himbeer','erdbeer','heidelbeer','blaubeer','johannisbeer','kirsch','schattenmorelle','sauerkirsche','vollkorndinkelmehl','vollkornweizenmehl','vollkornroggenmehl','vollkornhafermehl'];
+const Z_NEU=['kakaobutter','kokosöl','kokosfett','kokosnussöl','sheabutter','wasser','wasser*','quellwasser','säuerungsmittel','citronensäure','zitronensäure','säureregulator','natriumcitrat','natriumcitrate','natriumacetat','ascorbinsäure','antioxidationsmittel','antioxidans','tocopherol','beta-carotin','vitamin','vitaminmischung','pantothensäure','thiamin','riboflavin','niacin','biotin','folsäure','cobalamin','pyridoxin','retinol','calciferol','pektin','apfelpektin','guarkernmehl','johannisbrotkernmehl','xanthan','verdickungsmittel','geliermittel','gummi arabicum','cellulose','hydroxypropylmethylcellulose','lecithin','sojalecithin','sonnenblumenlecithin','emulgator','diglyceride','monoglyceride','mono- und diglyceride','glycerin','feuchthaltemittel','kohlensäure','backtriebmittel','natriumhydrogencarbonat','ammoniumhydrogencarbonat','ammoniumcarbonat','natriumcarbonat','natron','hirschhornsalz','weinstein','natriumhydroxid','sojasauce','shoyu','milcheiweiß','milchprotein','molkenprotein','calciumcaseinat','calciumchlorid','calciumsulfat','calciumcarbonat','calciumcitrat','kokosmilch','kokoscreme','kokosmark','eier','ei ','eigelb','eiklar','vollei','speisesalz','meersalz','steinsalz','jodsalz','tapioka','maismehl','maisgrieß','maisgriess','gelatine','agar','agar-agar','schaumbildner','farbstoff','färbender pflanzenextrakt','färbendes lebensmittel','färbendes konzentrat','stabilisator','trennmittel','siliciumdioxid','magnesiumsalz','konservierungsstoff','kaliumsorbat','sorbinsäure','sorbat','phenylalanin','reisextrakt','reisextraktpulver','schaum','würzextrakt','gewürzextrakt','reisgrieß','dinkelgrieß','weizengrieß','milchsäure','hafermilch','mandelmilch','sojamilch','reismilch','kokosnussmilch','cashewmilch','haselnussmilch','dinkelmilch','erbsenmilch','lupinenmilch','hanfmilch','nussmilch','pflanzenmilch','getreidemilch','haferdrink','mandeldrink','sojadrink','reisdrink','kokosdrink','cashewdrink','dinkeldrink','erbsendrink','hanfdrink','pflanzendrink','getreidedrink','nussdrink','sojajoghurt','kokosjoghurt','haferjoghurt','mandeljoghurt','cashewjoghurt','lupinenjoghurt','pflanzenjoghurt','hafersahne','sojasahne','reissahne','kokossahne','cashewsahne','pflanzensahne','soja cuisine','hafer cuisine','sojaquark','lupinenquark','pflanzenquark','butternut','butterkürbis','mandelbutter','cashewbutter','kürbisbutter','mandelkäse','cashewkäse','hefekäse','backpulver','hefe','frischhefe','trockenhefe','essig','branntweinessig','weinessig','apfelessig','balsamessig','röstkaffee','kaffee','espresso','koffein','taurin','hibiskus','stärke','zitronensaftpulver','zitronensaft','limettensaft','inosit','gepufft','puffreis','reiswaffel','maiswaffel'];
 function saltGrams(nut){ if(!nut) return null; const m=String(nut).match(/salz[^0-9]*([\d.,]+)\s*g/i); return m?parseFloat(m[1].replace(',','.')):null; }
 function sugarGrams(nut){ if(!nut) return null; const m=String(nut).match(/zucker[^0-9]*?([\d.,]+)\s*g/i); return m?parseFloat(m[1].replace(',','.')):null; }
 function fatGrams(nut){ if(!nut) return null; const m=String(nut).match(/fett[^0-9]*?([\d.,]+)\s*g/i); return m?parseFloat(m[1].replace(',','.')):null; }
 // Süße-Wörter mengenabhängig: bei Gesamtzucker ≤ 5 g/100 g (UK-Ampel „low sugar") ist die Süße nur Spur → grau statt rot
-const SWEET_KW=['zucker','sirup','glukose','glucose','dextrose','fruktose','fructose','maltose','süße','karamell','dicksaft','saftkonzentrat','honig'];
+const SWEET_KW=['zucker','sirup','glukose','glucose','dextrose','fruktose','fructose','maltose','süße','karamell','dicksaft','saftkonzentrat','honig','melasse'];
 const OMEGA6_OILS=['sonnenblumenöl','rapsöl','distelöl','sojaöl','maiskeimöl','traubenkernöl','baumwollsaatöl','sesamöl'];
 function classifyZutat(tok, salt, isBio, sugar, fat){
-  const t=(tok||"").toLowerCase();
+  const full=(tok||"").toLowerCase();
+  // Klammer-Logik (Befund LL): ⚠️-Stoffe überall erkennen; generischer Oberbegriff →
+  // Klammer entscheidet mit; spezifisches Verbund-LM → nur Kern ohne Klammer bewerten.
+  for(const k of Z_WARN) if(full.includes(k)) return 'warn';
+  const core=full.replace(/\([^)]*\)/g,' ').trim();
+  let t=GENERIC_CONTAINER_RE.test(core||full) ? full : (core||full);
   // 1. Negations-/Spuren-Schutz ("frei" nur als eigenes Wortende mit Leerzeichen davor — "glutenfrei" zählt nicht als Absage)
   if(/(^|\s)frei\b|frei[,)]|\bohne /.test(t)) return 'neu';
+  t=t.replace(/laktosefrei\w*|zuckerfrei\w*|fettarm\w*|salzarm\w*/g,' ');
   if(t.includes('ungehärtet')) return 'neu';
   if(t.includes('kann spuren')) return 'neu';
   // 2. WARN hat höchste Priorität
-  for(const k of Z_WARN) if(t.includes(k)) return 'warn';
   // 3. Salz mengenabhängig (nur generisches "Salz"/"Speisesalz"/"Kochsalz", nicht Pökelsalz/Schmelzsalz etc.)
   if(/\bsalz\b/.test(t) && !t.includes('pökelsalz') && !t.includes('schmelzsalz') && !t.includes('meersalz') && !t.includes('steinsalz') && !t.includes('jodsalz') && !t.includes('siedesalz') && !t.includes('würzsalz') && !t.includes('alpensalz') && !t.includes('kräutersalz') && !t.includes('rauchsalz') && !t.includes('salzsäure')){
     return (salt!=null && salt>1.5) ? 'bad' : 'neu';
@@ -847,7 +858,8 @@ function classifyZutat(tok, salt, isBio, sugar, fat){
   // 3d. Fruchtmark-/Fruchtsaft-/Gemüsesaft-Komposita (sync mit Generator 21.07.)
   if(/\wmark\b/.test(t) && !/dänemark|denmark|bismarck/.test(t)) return 'good';
   if(/gemüsesaft|tomatensaft|karottensaft|möhrensaft|rote.?bete.?saft|selleriesaft|gurkensaft|spinatsaft|kohlsaft/.test(t)) return 'neu';
-  if(/\wsaft\b/.test(t) && !/zitronensaft|limettensaft|sauerkraut|sojasauce/.test(t)) return 'bad';
+  if(/(zitronen|limetten)saft/.test(t)) return 'neu';   // Zitrus-Säuerung, kein Zucker (Befund NN)
+  if(/\wsaft\b/.test(t) && !/sauerkraut|sojasauce/.test(t)) return 'bad';
   // 4. Längster Match gewinnt — verhindert dass "apfel" in "apfelsaftkonzentrat" gewinnt
   let bestLen=0, bestCls=null, bestKw='';
   for(const k of Z_BAD)  if(t.includes(k) && k.length>bestLen){ bestLen=k.length; bestCls='bad'; bestKw=k; }
@@ -868,25 +880,51 @@ function classifyZutat(tok, salt, isBio, sugar, fat){
 }
 const Z_CLS={good:'z-good',bad:'z-bad',warn:'z-warn',neu:'z-neu'};
 // Token-by-token Highlighting — färbt JEDE Zutat einzeln, auch innerhalb von Klammern
+// Generische Oberbegriffe: bei denen entscheidet der Klammer-Inhalt die Einstufung
+// (Teigwaren (Vollkornmehl)=grün); bei spezifischen Verbund-LM (Sojasauce) wird die
+// Klammer NICHT einzeln bewertet — nur ⚠️-Stoffe darin zählen immer (Befund LL, 3-stufig).
+const GENERIC_CONTAINER_RE=/^\s*[\d,.\s%]*(teigwaren|nudeln|pasta|spätzle|gemüse\b|gemüsemischung|obst\b|früchte|fruchtmischung|pflanzliche?s? (öle?|fette?)|öl\b|süßungsmittel|zuckerarten|konservierungsstoff|säuerungsmittel|säureregulator|verdickungsmittel|geliermittel|farbstoff|backtriebmittel|emulgator|stabilisator|antioxidationsmittel|mehl(mischung)?\b|getreide\b|getreidemischung|müsli(mischung)?|nussmischung|saaten|kernemischung|würzmischung|gewürzmischung|kräutermischung|vitaminmischung|schokolade\b|kuvertüre|glasur|füllung|creme\b)/i;
 function renderZutatenColored(text, salt, isBio, sugar, fat){
   if(!text) return "";
+  // Spuren-Klausel + Fußnoten abtrennen (Befund JJ): ab "Kann (Spuren) ... enthalten",
+  // "Produktionsbedingt können ...", "*aus ..." oder "¹..." wird nichts mehr eingefärbt —
+  // Spuren zählen für Allergene, nicht für die Ampel.
+  let cut=text.length;
+  const cutRe=/(k(?:ann|önnen)\s+(?:spuren|[A-ZÄÖÜ]{2,})[^]*?enthalten|produktionsbedingt\s+können[^]*|hergestellt in einem betrieb[^]*|\*\s*aus\s+(?:kontrolliert\s+)?biolog[^]*|\*aus\s+[^]*|[¹²³]\s*[A-ZÄÖÜa-z][^]*)/i;
+  const cm=cutRe.exec(text);
+  if(cm && cm.index>0) cut=cm.index;
+  const colorPart=text.slice(0,cut), plainPart=text.slice(cut);
   const re=/([^,;()\[\]]+)|([,;()\[\]])/g;
-  let out="", m;
-  while((m=re.exec(text))!==null){
+  let out="", m, depth=0, lastTopTok=null;
+  while((m=re.exec(colorPart))!==null){
     if(m[1]){
       const raw=m[1], tok=raw.trim();
-      // Nicht einfärben: leer, reine Zahlen/Prozent (z. B. "15%", "0,5 g"), Sternchen-Hinweise
       if(!tok || /^[\d.,\s%g]+$/.test(tok) || /^\*+\s*$/.test(tok)){
         out+=esc(raw);
+      } else if(depth>0){
+        // In Klammern: nur ⚠️-Stoffe färben (Nitrit, Süßstoffe ...); bei generischem
+        // Oberbegriff davor färben wir die entscheidende Unterzutat normal mit.
+        const isWarn=Z_WARN.some(k=>tok.toLowerCase().includes(k));
+        if(isWarn){
+          out+=`<span class="${Z_CLS['warn']}">${esc(raw)}</span>`;
+        } else if(lastTopTok && GENERIC_CONTAINER_RE.test(lastTopTok)){
+          const cls=Z_CLS[classifyZutat(tok, salt, isBio, sugar, fat)];
+          out+=`<span class="${cls}">${esc(raw)}</span>`;
+        } else {
+          out+=esc(raw);   // Unterzutat eines spezifischen Verbund-LM: neutral lassen
+        }
       } else {
         const cls=Z_CLS[classifyZutat(tok, salt, isBio, sugar, fat)];
         out+=`<span class="${cls}">${esc(raw)}</span>`;
+        lastTopTok=tok;
       }
     } else {
+      if(m[2]==='(') depth++;
+      else if(m[2]===')'){ depth=Math.max(0,depth-1); if(depth===0) lastTopTok=null; }
       out+=esc(m[2]);
     }
   }
-  return out;
+  return out+esc(plainPart);
 }
 function renderReasonColored(text){
   if(!text||!text.trim()) return "";
@@ -951,6 +989,34 @@ function renderNoteBold(text){
 }
 // Trennkost-Hinweis: Urteil (Konform/…) + die Gruppen-Einordnung nach „→" fett,
 // Bausteine-Labels (Kohlenhydrat-Quellen: usw.) unterstrichen als Mini-Überschrift
+// „Hinweise"-Feld (public_note) strukturiert anzeigen (Befund Y): unterstrichene
+// Überschriften (Marke / Quelle & Import / Bild / Sonstiges) + Stichpunkte, mit Abstand.
+// Reine Anzeige-Transformation — der gespeicherte Freitext bleibt unverändert.
+function renderHinweise(text){
+  if(!text||!text.trim()) return "";
+  const t=text.replace(/\s+/g,' ').trim();
+  const blocks={Marke:[], 'Quelle & Import':[], Bild:[], Sonstiges:[]};
+  let rest=t;
+  const take=(re,into,fmt)=>{ let m; while((m=re.exec(rest))!==null){ into.push(fmt?fmt(m):m[0].trim()); rest=rest.replace(m[0],' '); re.lastIndex=0; } };
+  take(/Marke:\s*([^.·\n]+)[.·]?/gi, blocks.Marke, m=>m[1].trim());
+  take(/Auto-Voreinstufung\s*\(([^)]*)\)\.?/gi, blocks['Quelle & Import'], m=>'Auto-Voreinstufung: '+m[1].trim());
+  take(/Quelle:?\s*([A-Za-z0-9 .\-]+?(?:\.de|\.com|Facts)[^,.·\n]*)/gi, blocks['Quelle & Import'], m=>'Quelle: '+m[1].trim());
+  take(/(?:GTIN|EAN)\s*:?\s*(\d{8,14})/gi, blocks['Quelle & Import'], m=>'GTIN/EAN: '+m[1]);
+  take(/https?:\/\/\S+/gi, blocks['Quelle & Import'], m=>m[0]);
+  take(/Bild:\s*([^\n]+?)(?:(?=Marke:)|$)/gi, blocks.Bild, m=>m[1].trim());
+  rest=rest.replace(/[·|]+/g,' ').replace(/\s+/g,' ').trim().replace(/^[.,;\s]+|[.,;\s]+$/g,'');
+  if(rest) rest.split(/(?<=[.!?])\s+/).forEach(s=>{ if(s.trim().length>2) blocks.Sonstiges.push(s.trim()); });
+  const out=[];
+  for(const [head,items] of Object.entries(blocks)){
+    if(!items.length) continue;
+    out.push('<div style="text-decoration:underline'+(out.length?';margin-top:9px':'')+'">'+esc(head)+'</div>');
+    for(const it of items){
+      const safe=esc(it).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+      out.push('<div>• '+safe+'</div>');
+    }
+  }
+  return out.join('');
+}
 function renderTrennkostBold(text){
   if(!text||!text.trim()) return "";
   return text.split('\n').map(raw=>{
@@ -960,6 +1026,8 @@ function renderTrennkostBold(text){
       h=h.replace(/(→\s*)(.+)$/,'$1<b>$2</b>');
       h=h.replace(/^(•\s*)([A-ZÄÖÜ][A-Za-zÄÖÜäöüß -]{1,38}?(?:-Quellen?|quellen?|Hülsenfrüchte|Obst)):/,'$1<u>$2</u>:');
     }
+    // „Bausteine:"/„Hinweis:" = Mini-Überschriften → unterstrichen (Befund AA)
+    if(/^(Bausteine|Hinweis(e)?):?\s*$/.test(raw.trim())) h='<u>'+h+'</u>';
     return '<div>'+h+'</div>';
   }).join("");
 }
@@ -1055,7 +1123,7 @@ function openDrawer(food){
     if(rp) rp.innerHTML=renderReasonColored($("#e_ampel_reason").value)||'<span class="muted" style="font-size:12px">— keine Begründung —</span>';
     const hp=$("#prev_health"), pp=$("#prev_public"), tp=$("#prev_trennkost");
     if(hp) hp.innerHTML=renderNoteBold($("#e_health_note").value)||'<span class="muted" style="font-size:12px">— kein Hinweis —</span>';
-    if(pp) pp.innerHTML=renderNoteBold($("#e_public_note").value)||'<span class="muted" style="font-size:12px">— kein Hinweis —</span>';
+    if(pp) pp.innerHTML=renderHinweise($("#e_public_note").value)||'<span class="muted" style="font-size:12px">— kein Hinweis —</span>';
     if(tp) tp.innerHTML=renderTrennkostBold($("#e_trennkost_note").value)||'<span class="muted" style="font-size:12px">— kein Hinweis —</span>';
     const np=$("#prev_nutrition");
     if(np) np.innerHTML=renderNaehrwerteBold(nutTxt)||'<span class="muted" style="font-size:12px">— keine Nährwerte —</span>';
