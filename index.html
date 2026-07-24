@@ -982,8 +982,14 @@ function renderNoteBold(text){
       // exklusiv den Schlüsselbegriffen im Fließtext vorbehalten, nie beides gleichzeitig)
       return '<div style="text-decoration:underline'+(i?';margin-top:9px':'')+'">'+html+'</div>';
     }
+    // „je …, desto …" ist EINE Sinneinheit → als Ganzes fetten, nie mittendrin zerhacken
+    // (Ricarda 2026-07-24); läuft VOR der Schlagwort-Regex, damit die nicht hineinfettet.
+    let jeParts=[];
+    html = html.replace(/\bje\s+[^,\n]{1,45},\s*desto\s+[^.;–—\n]{1,45}/g,
+      (m)=>{ jeParts.push('<b>'+m+'</b>'); return ' JD'+(jeParts.length-1)+' '; });
     // Stichpunkt ODER langer Fließtext: nur Schlüsselbegriffe fett, Zeile bleibt normal
     html = html.replace(NOTE_HL,(_m,pre,qual,kw)=>pre+'<b>'+(qual||'')+kw+'</b>');
+    html = html.replace(/ JD(\d+) /g,(_m,i)=>jeParts[+i]);
     return '<div>'+html+'</div>';
   }).join("");
 }
