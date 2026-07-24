@@ -1023,6 +1023,16 @@ function renderHinweise(text){
   }
   return out.join('');
 }
+// Trennkost-Hinweis: die handlungsrelevanten Sinneinheiten (was kombinieren/meiden) fett,
+// längste Phrasen zuerst, damit nichts mittendrin zerhackt wird.
+const TK_HL=new RegExp('('+[
+ 'nicht mit Stärke/Kohlenhydraten oder Obst','nicht mit Eiweiß/Protein kombinieren',
+ 'nicht in dieselbe Mahlzeit','weiteren eiweißreichen Lebensmitteln',
+ 'stärkearme[mn]? Gemüse/Salat','1–2 TL Fett pro Mahlzeit','viel Fett \\(≥17,5 g/100 g\\)',
+ 'nur mit anderen Kohlenhydrat-Quellen','mit Obst oder neutralem Gemüse',
+ 'als eiweißreich eingestuft','als kohlenhydratreich eingestuft','als neutral eingestuft',
+ 'als Fett-Quelle eingestuft','Obst solo','eiweißreich','kohlenhydratreich'
+].join('|')+')','g');
 function renderTrennkostBold(text){
   if(!text||!text.trim()) return "";
   return text.split('\n').map(raw=>{
@@ -1031,6 +1041,8 @@ function renderTrennkostBold(text){
     if(raw.trim().charAt(0)==='•'){
       h=h.replace(/(→\s*)(.+)$/,'$1<b>$2</b>');
       h=h.replace(/^(•\s*)([A-ZÄÖÜ][A-Za-zÄÖÜäöüß -]{1,38}?(?:-Quellen?|quellen?|Hülsenfrüchte|Obst)):/,'$1<u>$2</u>:');
+      // Hinweis-Stichpunkte: handlungsrelevante Sinneinheiten fetten (Ricarda 2026-07-24)
+      h=h.replace(TK_HL,'<b>$1</b>');
     }
     // „Bausteine:"/„Hinweis:" = Mini-Überschriften → unterstrichen (Befund AA)
     if(/^(Bausteine|Hinweis(e)?):?\s*$/.test(raw.trim())) h='<u>'+h+'</u>';
