@@ -870,6 +870,10 @@ function classifyZutat(tok, salt, isBio, sugar, fat){
   // 4b. Ganze Bio-Milchprodukte → grün (Regel 16.07.: Bio-Milch als Zutat förderlich, mit Akne-Hinweis). Konzentrate (Milchpulver/Molke/Butterreinfett/-schmalz) bleiben auch bio gelb (Verarbeitung), konventionell bleibt gelb.
   const WHOLE_DAIRY=['milch','sahne','butter','käse','joghurt','quark','frischkäse','mozzarella','parmesan','parmigiano','grana padano','edamer','ricotta','mascarpone','feta','gouda','schafskäse','ziegenkäse','camembert','emmentaler','bergkäse','hüttenkäse','gorgonzola','pecorino','halloumi','burrata','cheddar'];
   if(bestCls==='bad' && isBio && WHOLE_DAIRY.includes(bestKw) && !/pulver|reinfett|schmalz|molke|milchzucker|milcheiweiß|milchprotein|kondens|trocken|schmelz/.test(t)) return 'good';
+  // 4c. Kokosöl nativ/unraffiniert → grün (Polyphenole/Vitamin E erhalten; VCO-Meta-Analyse Dez. 2025: Triglyceride ↓, HDL ↑, LDL nicht signifikant).
+  //     Raffiniert/desodoriert/gehärtet und Angabe-los bleiben gelb — analog zur Palmöl-Regel (nativ rot = grün, raffiniert = gelb/rot).
+  //     \braffiniert (mit Wortgrenze!) trifft NICHT "unraffiniert" — Substring-Falle wie seelachs/lachs.
+  if(bestCls==='bad' && SAT_OILS.includes(bestKw) && /nativ|kaltgepresst|virgin|unraffiniert/.test(t) && !/\braffiniert|desodoriert|gehärtet|geruchsneutral|geschmacksneutral/.test(t)) return 'good';
   // 5. Süße mengenabhängig (3 Stufen wie die offizielle Ampel): ≤5 g grau (Spur) · 5–22,5 g gelb (abträglich) · ≥22,5 g rot (Gefahr/⚠️)
   if(bestCls==='bad' && sugar!=null && SWEET_KW.some(k=>bestKw.includes(k))){
     if(sugar<=5) return 'neu';        // Spur → grau
@@ -988,10 +992,15 @@ function renderNoteBold(text){
     // (Ricarda 2026-07-24); läuft VOR der Schlagwort-Regex, damit die nicht hineinfettet.
     let jeParts=[];
     html = html.replace(/\bje\s+[^,\n]{1,45},\s*desto\s+[^.;–—\n]{1,45}/g,
-      (m)=>{ jeParts.push('<b>'+m+'</b>'); return ' JD'+(jeParts.length-1)+' '; });
+      (m)=>{ jeParts.push('<b>'+m+'</b>'); return '\u241fJD'+(jeParts.length-1)+'\u241f'; });
+    // „bio wie/und konventionell“ ist EINE Sinneinheit (beide gelten gleichermaßen) — sonst
+    // fettet die Schlagwort-Regex NUR „bio“ und der Leser denkt, nur Bio sei betroffen
+    // (Ricarda 2026-07-26). Läuft aus demselben Grund VOR der Schlagwort-Regex.
+    html = html.replace(/\bbio\s+(?:wie|und)\s+konventionell\w*(?:\s+gleichermaßen)?/gi,
+      (m)=>{ jeParts.push('<b>'+m+'</b>'); return '\u241fJD'+(jeParts.length-1)+'\u241f'; });
     // Stichpunkt ODER langer Fließtext: nur Schlüsselbegriffe fett, Zeile bleibt normal
     html = html.replace(NOTE_HL,(_m,pre,qual,kw)=>pre+'<b>'+(qual||'')+kw+'</b>');
-    html = html.replace(/ JD(\d+) /g,(_m,i)=>jeParts[+i]);
+    html = html.replace(/\u241fJD(\d+)\u241f/g,(_m,i)=>jeParts[+i]);
     return '<div>'+html+'</div>';
   }).join("");
 }
