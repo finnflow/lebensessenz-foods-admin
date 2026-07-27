@@ -873,7 +873,9 @@ function classifyZutat(tok, salt, isBio, sugar, fat){
   // 4c. Kokosöl nativ/unraffiniert → grün (Polyphenole/Vitamin E erhalten; VCO-Meta-Analyse Dez. 2025: Triglyceride ↓, HDL ↑, LDL nicht signifikant).
   //     Raffiniert/desodoriert/gehärtet und Angabe-los bleiben gelb — analog zur Palmöl-Regel (nativ rot = grün, raffiniert = gelb/rot).
   //     \braffiniert (mit Wortgrenze!) trifft NICHT "unraffiniert" — Substring-Falle wie seelachs/lachs.
-  if(bestCls==='bad' && SAT_OILS.includes(bestKw) && /nativ|kaltgepresst|virgin|unraffiniert/.test(t) && !/\braffiniert|desodoriert|gehärtet|geruchsneutral|geschmacksneutral/.test(t)) return 'good';
+  //     \bnativ\w* (Wortgrenze + offenes Ende) statt bloßem "nativ" — sonst falscher Treffer in
+  //     "Käse-Alter|nativ|e" (Bugfix 2026-07-27, z.B. Nestlé Backfrische Filetstückchen).
+  if(bestCls==='bad' && SAT_OILS.includes(bestKw) && /\bnativ\w*|\bkaltgepresst|\bvirgin|\bunraffiniert/.test(t) && !/\braffiniert|desodoriert|gehärtet|geruchsneutral|geschmacksneutral/.test(t)) return 'good';
   // 5. Süße mengenabhängig (3 Stufen wie die offizielle Ampel): ≤5 g grau (Spur) · 5–22,5 g gelb (abträglich) · ≥22,5 g rot (Gefahr/⚠️)
   if(bestCls==='bad' && sugar!=null && SWEET_KW.some(k=>bestKw.includes(k))){
     if(sugar<=5) return 'neu';        // Spur → grau
