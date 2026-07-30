@@ -1063,13 +1063,17 @@ function renderHinweise(text){
 }
 // Trennkost-Hinweis: die handlungsrelevanten Sinneinheiten (was kombinieren/meiden) fett,
 // längste Phrasen zuerst, damit nichts mittendrin zerhackt wird.
+// ★ A15 (Ricarda 2026-07-30): Fett gehören die STOFFE, um die es geht (Stärke, Eiweiß,
+// Obst, Fett) — nicht Floskeln wie „nicht in dieselbe Mahlzeit". Bei „Stärke und Eiweiß
+// gehören nicht in dieselbe Mahlzeit" muss man auf einen Blick sehen, WAS sich beißt.
 const TK_HL=new RegExp('('+[
- 'nicht mit Stärke/Kohlenhydraten oder Obst','nicht mit Eiweiß/Protein kombinieren',
- 'nicht in dieselbe Mahlzeit','weiteren eiweißreichen Lebensmitteln',
- 'stärkearme[mn]? Gemüse/Salat','1–2 TL Fett pro Mahlzeit','viel Fett \\(≥17,5 g/100 g\\)',
- 'nur mit anderen Kohlenhydrat-Quellen','mit Obst oder neutralem Gemüse',
- 'als eiweißreich eingestuft','als kohlenhydratreich eingestuft','als neutral eingestuft',
- 'als Fett-Quelle eingestuft','Obst solo','eiweißreich','kohlenhydratreich'
+ // Achtung: hinter „ß"/Umlauten funktioniert \b im Browser nicht (ASCII-Wortgrenze) —
+ // deshalb dort KEIN schließendes \b, sondern offene Endung.
+ 'Stärke/Kohlenhydraten?','Eiweiß/Protein','Kohlenhydrat-Quellen','Fett-Quelle',
+ 'stärkearme[mn]? Gemüse/Salat','neutralem Gemüse','Hülsenfrüchte',
+ 'eiweißreich\\w*','kohlenhydratreich\\w*',
+ '\\bStärke(?![a-z])','\\bEiweiß','\\bProtein\\b','\\bObst\\b','\\bFett\\b',
+ '1–2 TL','≥17,5 g/100 g','\\bsolo\\b','\\bneutral\\b'
 ].join('|')+')','g');
 function renderTrennkostBold(text){
   if(!text||!text.trim()) return "";
@@ -1157,9 +1161,11 @@ function openDrawer(food){
     <div class="field"><label>Vegan / vegetarisch / tierisch</label><select id="e_vegan"><option value="">— wählen —</option>${VEGAN.map(v=>`<option ${f.vegan===v?'selected':''}>${esc(v)}</option>`).join("")}</select></div>
     <div class="field"><label>Ampel</label><div class="ampel-row" id="e_ampel">${AMPEL.map(([v,l])=>`<button type="button" data-v="${v}" class="${f.ampel===v?'sel':''}">${l}</button>`).join("")}</div></div>
     <details class="field" open><summary>Ampel-Begründung</summary><div class="prevlabel">Vorschau (Zutat farbig, Erklärung schwarz)</div><div class="rsn-prev" id="prev_reason"></div><textarea id="e_ampel_reason">${esc(f.ampel_reason||"")}</textarea></details>
+    <!-- Reihenfolge (Ricarda 2026-07-30, A14): 1. Ampel-Begründung → 2. Gesundheitlicher
+         Hinweis → 3. Trennkost — Gesundheitsthemen zusammen, dann erst Trennkost. -->
+    <details class="field" open><summary>Gesundheitlicher Hinweis</summary><div class="rsn-prev" id="prev_health"></div><textarea id="e_health_note">${esc(f.health_note||"")}</textarea></details>
     <div class="field"><label>Trennkost-Hauptgruppe</label>${drawerChips("hay_groups",HAY,f.hay_groups)}</div>
     <details class="field" open><summary>Trennkost-Hinweis</summary><div class="rsn-prev" id="prev_trennkost"></div><textarea id="e_trennkost_note" style="min-height:160px">${esc(f.trennkost_note||"")}</textarea></details>
-    <details class="field" open><summary>Gesundheitlicher Hinweis</summary><div class="rsn-prev" id="prev_health"></div><textarea id="e_health_note">${esc(f.health_note||"")}</textarea></details>
     <details class="field"><summary>Hinweise</summary><div class="rsn-prev" id="prev_public"></div><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></details>
     <div class="field"><label>Allergene</label>${drawerChips("allergens",ALLERGENS,f.allergens,true)}</div>
     <div class="field"><label>Unverträglichkeiten</label>${drawerChips("intolerances",INTOL,f.intolerances,true)}</div>
