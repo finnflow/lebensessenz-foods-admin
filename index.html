@@ -846,6 +846,12 @@ function classifyZutat(tok, salt, isBio, sugar, fat, intrinsic){
   let t=GENERIC_CONTAINER_RE.test(core||full) ? full : (core||full);
   // 1. Negations-/Spuren-Schutz ("frei" nur als eigenes Wortende mit Leerzeichen davor — "glutenfrei" zählt nicht als Absage)
   if(/(^|\s)frei\b|frei[,)]|\bohne /.test(t)) return 'neu';
+  // ★ Tierische Gelatine bleibt NEUTRAL (Ricarda 2026-07-31) — gesundheitlich unbedenkliches
+  // Geliermittel; der Ethik-/Tierwohl-Hinweis steht in der Begründung, nicht in der Farbe.
+  // Muss VOR der Fleisch-Erkennung greifen: „Rindfleisch aus Gelatine" (Parser-Altfehler)
+  // wurde sonst als verarbeitetes Fleisch 👎🏼 angezeigt — Vorschau und Generator müssen
+  // dieselbe Einstufung liefern. Sync mit reason_from_ingredients.classify_zutat.
+  if(/gelatine/.test(t) && !/gelatinefrei|pflanzlich\w*\s+gelatine|vegetarisch\w*\s+gelatine|vegan\w*\s+gelatine|agar/.test(t)) return 'neu';
   t=t.replace(/laktosefrei\w*|zuckerfrei\w*|fettarm\w*|salzarm\w*/g,' ');
   if(t.includes('ungehärtet')) return 'neu';
   if(t.includes('kann spuren')) return 'neu';
