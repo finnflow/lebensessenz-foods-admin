@@ -843,6 +843,13 @@ function classifyZutat(tok, salt, isBio, sugar, fat, intrinsic){
   // Klammer entscheidet mit; spezifisches Verbund-LM → nur Kern ohne Klammer bewerten.
   for(const k of Z_WARN) if(full.includes(k)) return 'warn';
   const core=full.replace(/\([^)]*\)/g,' ').trim();
+  // ★ „Zucker"-Gemüse und -Obst (Ricarda 2026-08-02): Zuckerschoten sind Erbsen,
+  // Zuckermais ist Mais, Zuckerhut ist Salat. Sie trugen das Wort im Namen und wurden
+  // dadurch als zugesetzter Zucker gewertet. Muss synchron zum Generator bleiben.
+  if(/^\W*(zuckerschote|zuckererbse|zuckermais|zuckerhut|zuckermelone|zuckerrübe(?!nsirup)|zuckerrohr(?!zucker|sirup))/.test(core)) return 'good';
+  // ★ Kehrseite des bewusst grenzenlosen „honig" (Blüten-/Wald-/Lavendelhonig sind
+  // Komposita): Honigbusch ist eine Teepflanze, Honigmelone eine Frucht — kein Honig.
+  if(/honigbusch|honigmelone|honigtau|honigaroma|honignote/.test(full)) return 'good';
   let t=GENERIC_CONTAINER_RE.test(core||full) ? full : (core||full);
   // 1. Negations-/Spuren-Schutz ("frei" nur als eigenes Wortende mit Leerzeichen davor — "glutenfrei" zählt nicht als Absage)
   if(/(^|\s)frei\b|frei[,)]|\bohne /.test(t)) return 'neu';
