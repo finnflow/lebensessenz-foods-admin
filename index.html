@@ -965,10 +965,20 @@ function renderReasonColored(text){
   for(const raw of text.split('\n')){
     const s=raw.trim();
     if(!s){ out.push('<div style="height:6px"></div>'); continue; }
-    const m=s.match(/^([\s•👍👎⚠⚪⭐️‍\u{1F3FB}-\u{1F3FF}]*)(.*)$/u);
+    // ★ 4-FARBEN-ANZEIGE (Ricarda 2026-08-02): Gruppen-Überschriften sind jetzt
+    // „🟢 Gut" / „🟡 Nicht ideal (macht gelb)" / „🔴 Macht rot" / „⚪ Neutral".
+    // Die alten Köpfe (👍🏼/👎🏼/⚠️) werden weiter erkannt, solange noch Alt-Texte in der
+    // Datenbank stehen. Ein ⚠️ INNERHALB einer 🔴-Zeile ist nur Betonung und darf die
+    // Gruppenfarbe NICHT umschalten — deshalb wird der Kopf nur an Zeilen ohne „•" gelesen.
+    const istKopf = !s.startsWith('•');
+    const m=s.match(/^([\s•👍👎⚠⚪⭐🟢🟡🔴️‍\u{1F3FB}-\u{1F3FF}]*)(.*)$/u);
     const lead=m?m[1]:"", content=m?m[2]:s;
-    if(lead.includes('👍')) cur='z-good'; else if(lead.includes('👎')) cur='z-bad';
-    else if(lead.includes('⚠')) cur='z-warn'; else if(lead.includes('⚪')) cur='z-neu';
+    if(istKopf){
+      if(lead.includes('🟢')||lead.includes('👍')) cur='z-good';
+      else if(lead.includes('🟡')||lead.includes('👎')) cur='z-bad';
+      else if(lead.includes('🔴')||lead.includes('⚠')) cur='z-warn';
+      else if(lead.includes('⚪')) cur='z-neu';
+    }
     if(!content){ out.push(`<div>${esc(lead)}</div>`); continue; }
     const ci=content.indexOf(':');
     // **Text** in der Erklärung fett hervorheben (z. B. "kaltgepresst/unerhitzt" bei ⭐-Zutaten)
