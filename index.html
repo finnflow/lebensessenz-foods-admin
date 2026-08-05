@@ -211,6 +211,12 @@
       <option value="published">Nur veröffentlicht</option>
     </select>
     <label><input type="checkbox" id="fUnreviewed" /> nur unbestätigte</label>
+    <select id="fDurchsicht" title="Offene Durchsicht-Listen (Ricarda 2026-08-05)">
+      <option value="">Durchsicht: alle</option>
+      <option value="sammel">Sammel-Einträge ohne echte Rezeptur</option>
+      <option value="kaputt">beschädigte Zutatenliste</option>
+      <option value="unterrez">Fertiggericht mit Unter-Rezeptur, grün</option>
+    </select>
     <button class="btn primary" id="newBtn">+ Neues Lebensmittel</button>
   </div>
 
@@ -551,6 +557,7 @@ function sortKey(f){
 }
 function render(){
   const q=$("#search").value.trim().toLowerCase(), st=$("#fStatus").value, unrev=$("#fUnreviewed").checked;
+  const durchsicht=($("#fDurchsicht")||{}).value||"";
   let list = FOODS.filter(f=>{
     if(q && !f.name.toLowerCase().includes(q)) return false;
     for(const flt of FILTERS){
@@ -563,6 +570,36 @@ function render(){
     }
     if(st && f.status!==st) return false;
     if(unrev && f.reviewed_by_ricarda) return false;
+    // ★ Durchsicht-Listen (Ricarda 2026-08-05): dieselben Erkennungen wie im Generator,
+    // damit ein Eintrag automatisch aus der Liste faellt, sobald er in Ordnung ist.
+    if(durchsicht){
+      const ing=(f.ingredients||"").trim();
+      if(durchsicht==="sammel"){
+        const generisch = !ing
+          || /\s\/\s/.test(f.name||"")
+          || /üblicherweise|typische durchschnittsrezeptur|⌀|keine exakte/i.test(ing);
+        if(!generisch) return false;
+      }
+      if(durchsicht==="kaputt"){
+        if(/durchschnittsrezeptur|keine exakte|üblicherweise|⌀/i.test(ing)) return false;
+        const auf=(ing.match(/\(/g)||[]).length, zu=(ing.match(/\)/g)||[]).length;
+        const kaputt = !ing
+          || /durchschnittliche nährwerte|%-?RM pro|brennwert\s*\d|kJ\s*\/\s*\d/i.test(ing)
+          || /[A-Za-zÄÖÜäöü]\?[A-Za-zÄÖÜäöü]|[A-ZÄÖÜ]{3,}\?/.test(ing)
+          || auf!==zu
+          || /[,;]\s*$|[a-zäöüß]-\s*$|\.\.\.$|…\s*$/.test(ing)
+          || (ing.split(/\s+/).length>=12 && !ing.includes(",") && !ing.includes(";"));
+        if(!kaputt) return false;
+      }
+      if(durchsicht==="unterrez"){
+        if(f.ampel!=="GRUEN") return false;
+        const norm=ing.replace(/\[/g,"(").replace(/\]/g,")");
+        const toks=splitTop(norm);
+        if(!toks.length || toks.length>4) return false;
+        const tief=toks.filter(t=>(t.match(/,/g)||[]).length>=3 && t.includes("("));
+        if(!(tief.length && tief.length>=Math.max(1,Math.floor(toks.length/2)))) return false;
+      }
+    }
     return true;
   });
   list.sort((a,b)=>{
@@ -607,7 +644,7 @@ function render(){
   });
   syncFilterUI();
 }
-["#search","#fStatus","#fUnreviewed"].forEach(s=>$(s).addEventListener("input",render));
+["#search","#fStatus","#fUnreviewed","#fDurchsicht"].forEach(s=>$(s).addEventListener("input",render));
 
 // ── Kompakter Filter: Panel auf/zu, Zähler, aktive Chips ──
 $("#filterToggle").onclick=()=>$("#filterPanel").classList.toggle("open");
@@ -837,6 +874,20 @@ const OMEGA6_OILS=['sonnenblumenöl','rapsöl','distelöl','sojaöl','maiskeimö
 const INTRINSIC_SWEET=/dattel|fruchtmark|apfelmark|obstpulver|rosinen|sultaninen|feige|banane/;
 // Gesättigte Pflanzenfette (LDL-Achse statt Omega-6, aber gleiche Mengenlogik — Ricarda 2026-07-26, Sacks 2017/Neelakantan 2020)
 const SAT_OILS=['kokosöl','kokosfett','kokosnussöl'];
+// Zutaten auf oberster Ebene trennen (Kommas in Klammern zaehlen nicht) — schlanke
+// Fassung von split_top aus reason_from_ingredients.py, nur fuer die Durchsicht-Filter.
+function splitTop(s){
+  const out=[]; let cur="", depth=0;
+  for(const ch of (s||"")){
+    if(ch==="(" ) depth++;
+    else if(ch===")") depth=Math.max(0,depth-1);
+    if((ch==="," || ch===";") && depth===0){ if(cur.trim()) out.push(cur.trim()); cur=""; }
+    else cur+=ch;
+  }
+  if(cur.trim()) out.push(cur.trim());
+  return out;
+}
+
 function classifyZutat(tok, salt, isBio, sugar, fat, intrinsic){
   const full=(tok||"").toLowerCase();
   // Klammer-Logik (Befund LL): ⚠️-Stoffe überall erkennen; generischer Oberbegriff →
