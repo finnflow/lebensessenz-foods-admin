@@ -961,9 +961,16 @@ function classifyZutat(tok, salt, isBio, sugar, fat, intrinsic){
   for(const k of Z_BAD)  if(t.includes(k) && k.length>bestLen){ bestLen=k.length; bestCls='bad'; bestKw=k; }
   for(const k of Z_GOOD) if(t.includes(k) && k.length>bestLen){ bestLen=k.length; bestCls='good'; bestKw=k; }
   for(const k of Z_NEU)  if(t.includes(k) && k.length>bestLen){ bestLen=k.length; bestCls='neu'; bestKw=k; }
-  // 4b. Ganze Bio-Milchprodukte → grün (Regel 16.07.: Bio-Milch als Zutat förderlich, mit Akne-Hinweis). Konzentrate (Milchpulver/Molke/Butterreinfett/-schmalz) bleiben auch bio gelb (Verarbeitung), konventionell bleibt gelb.
+  // 4b. ★ VERSCHÄRFT 07.08. (sync Generator): Bio-Milchprodukte sind nur noch gruen-faehig,
+  // wenn LANG GEREIFT (Kaese, Wochen bis Monate Reifung). Frischkaese, Mozzarella, Milch,
+  // Joghurt, Quark, Skyr bleiben auch bio GELB - der IGF-1-Effekt haengt am Molkenprotein,
+  // nicht am Fett (Melnik 2012). Die alte 16.07.-Regel machte jedes ganze Bio-Milchprodukt gruen.
+  const GEREIFTER_KAESE=['parmesan','parmigiano','grana padano','edamer','gouda','emmentaler','bergkäse','gorgonzola','pecorino','cheddar','camembert'];
   const WHOLE_DAIRY=['milch','sahne','butter','käse','joghurt','quark','frischkäse','mozzarella','parmesan','parmigiano','grana padano','edamer','ricotta','mascarpone','feta','gouda','schafskäse','ziegenkäse','camembert','emmentaler','bergkäse','hüttenkäse','gorgonzola','pecorino','halloumi','burrata','cheddar'];
-  if(bestCls==='bad' && isBio && WHOLE_DAIRY.includes(bestKw) && !/pulver|reinfett|schmalz|molke|milchzucker|milcheiweiß|milchprotein|kondens|trocken|schmelz/.test(t)) return 'good';
+  if(bestCls==='bad' && isBio && WHOLE_DAIRY.includes(bestKw) && !/pulver|reinfett|schmalz|molke|milchzucker|milcheiweiß|milchprotein|kondens|trocken|schmelz/.test(t)){
+    if(GEREIFTER_KAESE.includes(bestKw) || /gereift/.test(t)) return 'good';
+    return 'bad';
+  }
   // 4b2. Bio-Fleisch/-Geflügel (unverarbeitet) → grün; verarbeitet/geräuchert/gepökelt bleibt gelb/rot.
   if(bestCls==='bad' && isBio && MEAT_WHOLE.includes(bestKw) && !/wurst|salami|schinken|speck|bacon|räucher|geräuchert|pökel|nitrit|kasseler/.test(t)) return 'good';
   // 4c. Kokosöl nativ/unraffiniert → grün (Polyphenole/Vitamin E erhalten; VCO-Meta-Analyse Dez. 2025: Triglyceride ↓, HDL ↑, LDL nicht signifikant).
