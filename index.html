@@ -338,7 +338,7 @@ const FIELD_META = {
   allergens:   {label:"Allergene",            opts:ALLERGENS,  multi:true,  color:ALLERGEN_COLOR},
   intolerances:{label:"Unverträglichkeiten",  opts:INTOL,      multi:true,  color:INTOL_COLOR},
 };
-const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,ampel_reason,health_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition,image_url,nachhaltigkeit,brand,stores,price";
+const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,ampel_reason,health_note,ganzheitlich_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition,image_url,nachhaltigkeit,brand,stores,price";
 
 const STORES = ["Edeka","Rewe","Kaufland","Aldi","Lidl","Penny","Netto","dm","Rossmann","Müller","Budni","Bioladen","Alnatura","Denn's","Reformhaus","Online-Shop"];
 // Preis RELATIV zur Kategorie: günstig/teuer wird an ähnlichen Produkten gemessen
@@ -1266,6 +1266,7 @@ function openDrawer(food){
     <!-- Reihenfolge (Ricarda 2026-07-30, A14): 1. Ampel-Begründung → 2. Gesundheitlicher
          Hinweis → 3. Trennkost — Gesundheitsthemen zusammen, dann erst Trennkost. -->
     <details class="field" open><summary>Gesundheitlicher Hinweis</summary><div class="rsn-prev" id="prev_health"></div><textarea id="e_health_note">${esc(f.health_note||"")}</textarea></details>
+    <details class="field" open><summary>🌍 Ganzheitliche Betrachtung <small style="color:var(--muted);font-weight:400">(Ethik · Umwelt · Soziales — ändert die Ampel nie)</small></summary><div class="rsn-prev" id="prev_ganzheitlich"></div><textarea id="e_ganzheitlich_note">${esc(f.ganzheitlich_note||"")}</textarea></details>
     <div class="field"><label>Trennkost-Hauptgruppe</label>${drawerChips("hay_groups",HAY,f.hay_groups)}</div>
     <details class="field" open><summary>Trennkost-Hinweis</summary><div class="rsn-prev" id="prev_trennkost"></div><textarea id="e_trennkost_note" style="min-height:160px">${esc(f.trennkost_note||"")}</textarea></details>
     <details class="field"><summary>Hinweise</summary><div class="rsn-prev" id="prev_public"></div><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></details>
@@ -1287,12 +1288,14 @@ function openDrawer(food){
     if(rp) rp.innerHTML=renderReasonColored($("#e_ampel_reason").value)||'<span class="muted" style="font-size:12px">— keine Begründung —</span>';
     const hp=$("#prev_health"), pp=$("#prev_public"), tp=$("#prev_trennkost");
     if(hp) hp.innerHTML=renderNoteBold($("#e_health_note").value)||'<span class="muted" style="font-size:12px">— kein Hinweis —</span>';
+    const gp=$("#prev_ganzheitlich");
+    if(gp) gp.innerHTML=renderNoteBold($("#e_ganzheitlich_note").value)||'<span class="muted" style="font-size:12px">— kein Eintrag —</span>';
     if(pp) pp.innerHTML=renderHinweise($("#e_public_note").value)||'<span class="muted" style="font-size:12px">— kein Hinweis —</span>';
     if(tp) tp.innerHTML=renderTrennkostBold($("#e_trennkost_note").value)||'<span class="muted" style="font-size:12px">— kein Hinweis —</span>';
     const np=$("#prev_nutrition");
     if(np) np.innerHTML=renderNaehrwerteBold(nutTxt)||'<span class="muted" style="font-size:12px">— keine Nährwerte —</span>';
   }
-  ["e_ingredients","e_ampel_reason","e_nutrition","e_health_note","e_public_note","e_trennkost_note"].forEach(id=>{const el=$("#"+id); if(el) el.addEventListener("input",refreshPrev);});
+  ["e_ingredients","e_ampel_reason","e_nutrition","e_health_note","e_ganzheitlich_note","e_public_note","e_trennkost_note"].forEach(id=>{const el=$("#"+id); if(el) el.addEventListener("input",refreshPrev);});
   function bindEditToggle(prevId, taId){
     const prev=$("#"+prevId), ta=$("#"+taId);
     if(!prev||!ta) return;
@@ -1305,6 +1308,7 @@ function openDrawer(food){
   bindEditToggle("prev_zutaten","e_ingredients");
   bindEditToggle("prev_reason","e_ampel_reason");
   bindEditToggle("prev_health","e_health_note");
+  bindEditToggle("prev_ganzheitlich","e_ganzheitlich_note");
   bindEditToggle("prev_public","e_public_note");
   bindEditToggle("prev_trennkost","e_trennkost_note");
   bindEditToggle("prev_nutrition","e_nutrition");
@@ -1321,7 +1325,7 @@ $("#saveBtn").onclick=async()=>{
   const a=$("#e_ampel").querySelector("button.sel");
   const payload={name,brand:dval("e_brand"),category:$("#e_category").value||null,vegan:$("#e_vegan").value||null,ampel:a?a.dataset.v:null,
     ampel_reason:dval("e_ampel_reason"),trennkost_note:dval("e_trennkost_note"),
-    health_note:dval("e_health_note"),public_note:dval("e_public_note"),
+    health_note:dval("e_health_note"),ganzheitlich_note:dval("e_ganzheitlich_note"),public_note:dval("e_public_note"),
     hay_groups:dmulti("hay_groups"),allergens:dmulti("allergens"),intolerances:dmulti("intolerances"),
     ingredients:dval("e_ingredients"),nutrition:dval("e_nutrition"),stores:dmulti("stores"),price:($("#e_price").value!==""?Number($("#e_price").value):null),image_url:drawerImageUrl,reviewed_by_ricarda:true};
   let res;
