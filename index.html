@@ -965,6 +965,20 @@ function classifyZutat(tok, salt, isBio, sugar, fat, intrinsic){
     if(sugar>=22.5 && !intrinsic) return 'warn';    // viel → rot (Gefahr)
     // 5–22,5 g (oder intrinsisch) → bleibt 'bad' → gelb (mittlere Menge, abträglich)
   }
+  // ★★ MENGENLOGIK IN DER VORSCHAU (Ricarda 2026-08-07)
+  // Bisher kannte die Vorschau eine Mengenpruefung NUR beim Zucker. Dadurch war
+  // "Rindfleisch" immer gelb — egal ob 15 % oder 0,5 % — und die Vorschau widersprach der
+  // Ampel-Begruendung, die mit Menge rechnet (Allos Gulaschsuppe, Alnatura Spinat-Walnuss).
+  // HARTE FAKTOREN bleiben unberuehrt: kuenstliche Suessstoffe, Transfette, Glutamat,
+  // Carrageen, Titandioxid, Poekelstoffe und verarbeitetes Fleisch zaehlen auch in Spuren.
+  const HART = /süßstoff|aspartam|acesulfam|sucralose|saccharin|cyclamat|transfett|gehärtet|glutamat|carrageen|titandioxid|nitrit|pökel|salami|schinken|speck|wurst|erythrit/;
+  if(bestCls==='bad' && !HART.test(t)){
+    // ausdruecklich angegebener Anteil bis 2 % = Spur, kein Abzug.
+    // Ueber 5 % gilt die Zutat als nennenswert — dann bleibt die Wertung der Liste stehen,
+    // auch wenn sie weit hinten steht (das war der ODER/UND-Fehler vom 06.08.).
+    const mp = t.match(/([0-9]+[,.]?[0-9]*)\s*%/);
+    if(mp && parseFloat(mp[1].replace(',','.')) <= 2) return 'neu';
+  }
   // Öl-Mengen-Gate: kleine Omega-6-Öl-Beigabe (Gesamtfett < 5 g/100 g) → neutral, kein Abzug
   if(bestCls==='bad' && fat!=null && fat<5 && (OMEGA6_OILS.includes(bestKw) || SAT_OILS.includes(bestKw))) return 'neu';
   return bestCls || 'neu';
@@ -1254,7 +1268,7 @@ function openDrawer(food){
     <details class="field"><summary>Hinweise</summary><div class="rsn-prev" id="prev_public"></div><textarea id="e_public_note">${esc(f.public_note||"")}</textarea></details>
     <div class="field"><label>Allergene</label>${drawerChips("allergens",ALLERGENS,f.allergens,true)}</div>
     <div class="field"><label>Unverträglichkeiten</label>${drawerChips("intolerances",INTOL,f.intolerances,true)}</div>
-    <details class="field" open><summary>Zutaten <small style="color:var(--muted);font-weight:400">(Freitext)</small></summary><div class="prevlabel">Vorschau (🟢 förderlich · 🟡 abträglich · 🔴 Gefahr · grau neutral)</div><div class="zut-prev" id="prev_zutaten"></div><textarea id="e_ingredients" placeholder="z. B. Hähnchenfleisch (60%), Paniermehl (Weizen), Pflanzenöl, Salz, Gewürze …">${esc(f.ingredients||"")}</textarea></details>
+    <details class="field" open><summary>Zutaten <small style="color:var(--muted);font-weight:400">(Freitext)</small></summary><div class="prevlabel">Vorschau nach Zutaten-Typ (🟢 förderlich · 🟡 abträglich · 🔴 Gefahr · grau neutral) — die Ampel-Begründung unten wertet zusätzlich die Mengen, deshalb kann sie abweichen</div><div class="zut-prev" id="prev_zutaten"></div><textarea id="e_ingredients" placeholder="z. B. Hähnchenfleisch (60%), Paniermehl (Weizen), Pflanzenöl, Salz, Gewürze …">${esc(f.ingredients||"")}</textarea></details>
     <details class="field" open><summary>Nährwerte <small style="color:var(--muted);font-weight:400">(Freitext, z. B. pro 100 g)</small></summary><div class="rsn-prev" id="prev_nutrition"></div><textarea id="e_nutrition" placeholder="z. B. Energie 250 kcal · Fett 14 g (davon ges. 3 g) · KH 18 g (Zucker 1 g) · Eiweiß 12 g · Salz 1,2 g">${esc(f.nutrition||"")}</textarea></details>`;
   $("#e_ampel").querySelectorAll("button").forEach(b=>b.onclick=()=>{$("#e_ampel").querySelectorAll("button").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");});
   $("#drawerBody").querySelectorAll(".chips label").forEach(l=>l.querySelector("input").onchange=e=>l.classList.toggle("on",e.target.checked));
