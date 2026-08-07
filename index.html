@@ -318,6 +318,9 @@ const AMPEL = [["GRUEN","🟢 Grün"],["GELB","🟡 Gelb"],["ROT","🔴 Rot"],["
 const AMPEL_ORDER = {GRUEN:1,GELB:2,ROT:3,GRAU:4};
 
 const HAY_COLOR = {"stärkearmes Gemüse/neutral":"green","Obst":"pink","Kohlenhydrat-Quelle":"yellow","Protein-Quelle":"red","Fett-Quelle":"orange","Hülsenfrüchte":"purple","unklar":"gray"};
+// Anzeige-Label (Wert bleibt technisch unverändert; nur die Darstellung ist klarer, z. B. für Getränke/Gewürze).
+const HAY_LABEL = {"stärkearmes Gemüse/neutral":"neutral (Gemüse/Getränke)"};
+const hayLbl = v => HAY_LABEL[v] || v;
 const VEGAN_COLOR = {"vegan":"green","vegetarisch":"yellow","tierisch":"brown"};
 const BIO_FILTER = "🌱 Bio-Produkte";  // Bio als Auswahl im Kategorie-Filter (Stempel abgelöst)
 const ALLERGEN_COLOR = {"Glutenhaltiges Getreide":"yellow","Weizen":"yellow","Roggen":"yellow","Gerste":"yellow","Hafer":"yellow",
@@ -378,7 +381,7 @@ const FILTERS = [
      return true;
    }},
   {key:"vegan",     label:"Vegan/tierisch",      opts:VEGAN,      mode:"or",  field:f=>f.vegan?[f.vegan]:[]},
-  {key:"hay",       label:"Trennkost-Gruppe",          opts:HAY,        mode:"and", field:f=>f.hay_groups||[]},
+  {key:"hay",       label:"Trennkost-Gruppe",          opts:HAY,        mode:"and", labels:HAY_LABEL, field:f=>f.hay_groups||[]},
   {key:"haykonform", label:"Trennkost konform?", opts:["konform","bedingt konform","nicht konform","unbewertet"], mode:"or",
    labels:{"konform":"✅ konform","bedingt konform":"⚠️ bedingt konform","nicht konform":"❌ nicht konform","unbewertet":"– noch offen"},
    field:f=>{const hk=hayKonform(f.hay_groups); return [hk?({"✅":"konform","⚠️":"bedingt konform","❌":"nicht konform"}[hk.sym]):"unbewertet"];}},
@@ -432,7 +435,7 @@ document.addEventListener("click",()=>document.querySelectorAll(".msel-pop.open"
 let FOODS=[], current=null, selected=new Set(), lastIdx=null, visibleRows=[], sortField="name", sortDir="asc", drawerImageUrl=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const chipsHtml=(vals,cmap)=>(vals&&vals.length)?vals.map(v=>`<span class="chip c-${cmap[v]||'gray'}">${esc(v)}</span>`).join("") : '<span class="muted">—</span>';
+const chipsHtml=(vals,cmap)=>(vals&&vals.length)?vals.map(v=>`<span class="chip c-${cmap[v]||'gray'}">${esc(hayLbl(v))}</span>`).join("") : '<span class="muted">—</span>';
 
 // Hay-Konformität als reine Funktion von hay_groups (✅ konform / ⚠️ bedingt / ❌ nicht konform)
 function hayKonform(groups){
@@ -733,7 +736,7 @@ function openCellEditor(food,field,cell){
     html+=`<select id="popsel"><option value="">— keine —</option>`+meta.opts.map(o=>`<option ${food[field]===o?'selected':''}>${esc(o)}</option>`).join("")+`</select>`;
   }else{
     const sel=food[field]||[];
-    html+=`<div class="pop-chips">`+meta.opts.map(o=>`<label class="chip c-${meta.color[o]||'gray'} ${sel.includes(o)?'on':''}"><input type="checkbox" value="${esc(o)}" ${sel.includes(o)?'checked':''}>${esc(o)}</label>`).join("")+`</div>`;
+    html+=`<div class="pop-chips">`+meta.opts.map(o=>`<label class="chip c-${meta.color[o]||'gray'} ${sel.includes(o)?'on':''}"><input type="checkbox" value="${esc(o)}" ${sel.includes(o)?'checked':''}>${esc(hayLbl(o))}</label>`).join("")+`</div>`;
   }
   html+=`<div class="pop-foot"><button class="btn" id="popcancel">Abbrechen</button><button class="btn primary" id="popsave">Speichern</button></div>`;
   showPop(html,cell);
