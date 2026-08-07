@@ -878,7 +878,10 @@ function fatGrams(nut){ if(!nut) return null; const m=String(nut).match(/fett[^0
 // Süße-Wörter mengenabhängig: bei Gesamtzucker ≤ 5 g/100 g (UK-Ampel „low sugar") ist die Süße nur Spur → grau statt rot
 const SWEET_KW=['zucker','sirup','glukose','glucose','dextrose','fruktose','fructose','maltose','süße','karamell','dicksaft','saftkonzentrat','honig','melasse'];
 const OMEGA6_OILS=['sonnenblumenöl','rapsöl','distelöl','sojaöl','maiskeimöl','traubenkernöl','baumwollsaatöl','sesamöl'];
-const INTRINSIC_SWEET=/dattel|fruchtmark|apfelmark|obstpulver|rosinen|sultaninen|feige|banane/;
+// ★ Sync Generator 2026-08-07 (G20): ALLE ganzen Trockenfruechte sind Eigensuesse;
+// aufgeschlossene Formen (Pueree, Paste, Konzentrat, Sirup) zaehlen NICHT (SACN-Zellstruktur).
+const INTRINSIC_SWEET=/dattel|fruchtmark|apfelmark|obstpulver|rosinen|sultaninen|feige|banane|mango|ananas|aprikose|pflaume|goji|cranberr|kirsch|pfirsich|papaya|weinbeere|korinthe|trockenfrucht|trockenobst/;
+const AUFGESCHLOSSEN=/püree|puree|paste|mark\b|mus\b|pulver|konzentrat|sirup|dicksaft|saft\b|gesüßt|gezuckert|kandiert/;
 // Gesättigte Pflanzenfette (LDL-Achse statt Omega-6, aber gleiche Mengenlogik — Ricarda 2026-07-26, Sacks 2017/Neelakantan 2020)
 const SAT_OILS=['kokosöl','kokosfett','kokosnussöl'];
 // Zutaten auf oberster Ebene trennen (Kommas in Klammern zaehlen nicht) — schlanke
@@ -913,6 +916,8 @@ function classifyZutat(tok, salt, isBio, sugar, fat, intrinsic){
   // Tierwohl-Hinweis in der Begründung. In einem bio-zertifizierten Produkt sind laut
   // EU-Recht ALLE Zutaten bio, deshalb entscheidet der Bio-Status des PRODUKTS.
   // Muss synchron zu classify_zutat im Generator bleiben.
+  // ★ Sync Generator 2026-08-07 (G22): oelsaeurereiches Sonnenblumenoel ist ein Omega-9-Oel.
+  if(/ölsäurereich|high[\s-]?oleic/.test(t)) return 'good';
   if(/^\W*(eier|ei\b|eigelb|eiklar|vollei|hühnerei|freilandei|bio-?ei)/.test(core)
      && !/eiweiß|einweichen|eis\b|eisen/.test(core)) return isBio ? 'good' : 'bad';
   let t=GENERIC_CONTAINER_RE.test(core||full) ? full : (core||full);
@@ -925,6 +930,13 @@ function classifyZutat(tok, salt, isBio, sugar, fat, intrinsic){
   // dieselbe Einstufung liefern. Sync mit reason_from_ingredients.classify_zutat.
   if(/gelatine/.test(t) && !/gelatinefrei|pflanzlich\w*\s+gelatine|vegetarisch\w*\s+gelatine|vegan\w*\s+gelatine|agar/.test(t)) return 'neu';
   t=t.replace(/laktosefrei\w*|zuckerfrei\w*|fettarm\w*|salzarm\w*/g,' ');
+  // ★ Sync Generator 2026-08-07 (G17/F27): Transfette entstehen bei TEILweiser Haertung.
+  // Voll gehaertetes Fett ist fast nur gesaettigt -> gelb; teil/unbestimmt gehaertet -> rot.
+  // "ungehaertet" ist das Gegenteil und darf nie warnen.
+  if(/gehärtet|hydrogenated/.test(t) && !/ungehärtet/.test(t)){
+    if(/(?:voll|ganz)\s*gehärtet|vollgehärtet|fully hydrogenated/.test(t)) return 'bad';
+    return 'warn';
+  }
   if(t.includes('ungehärtet')) return 'neu';
   if(t.includes('kann spuren')) return 'neu';
   // 2. WARN hat höchste Priorität
@@ -1008,10 +1020,10 @@ function renderZutatenColored(text, salt, isBio, sugar, fat){
   { let d2=0,cur2="",cnt=0;
     for(const ch of colorPart){
       if(ch==='(')d2++; else if(ch===')')d2=Math.max(0,d2-1);
-      if((ch===','||ch===';')&&d2===0){ if(INTRINSIC_SWEET.test(cur2.toLowerCase()))intrinsic=true; cur2=""; if(++cnt>=3)break; }
+      if((ch===','||ch===';')&&d2===0){ const c2=cur2.toLowerCase(); if(INTRINSIC_SWEET.test(c2)&&!AUFGESCHLOSSEN.test(c2))intrinsic=true; cur2=""; if(++cnt>=3)break; }
       else cur2+=ch;
     }
-    if(!intrinsic && cnt<3 && INTRINSIC_SWEET.test(cur2.toLowerCase()))intrinsic=true;
+    if(!intrinsic && cnt<3 && INTRINSIC_SWEET.test(cur2.toLowerCase()) && !AUFGESCHLOSSEN.test(cur2.toLowerCase()))intrinsic=true;
   }
   const re=/([^,;()\[\]]+)|([,;()\[\]])/g;
   let out="", m, depth=0, lastTopTok=null;
