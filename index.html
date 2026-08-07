@@ -104,6 +104,7 @@
   .dot.GRUEN{background:var(--gruen)} .dot.GELB{background:var(--gelb)} .dot.ROT{background:var(--rot)} .dot.GRAU{background:var(--grau)}
   .dot.none{background:#d8d2c6;box-shadow:inset 0 0 0 1.5px #c3bba9}
   .bio-leaf{margin-left:3px;font-size:12px;vertical-align:middle}
+  .bio-siegel{margin-left:4px;vertical-align:middle}
   .star{font-size:12.5px;line-height:1;margin-left:3px;vertical-align:middle}
   .reviewed{color:var(--gruen);font-weight:700} .open{color:#b9912f}
   .hay-konform{ text-align:center; width:26px; font-size:14px; }
@@ -323,6 +324,8 @@ const HAY_LABEL = {"stärkearmes Gemüse/neutral":"neutral (Gemüse/Getränke)"}
 const hayLbl = v => HAY_LABEL[v] || v;
 const VEGAN_COLOR = {"vegan":"green","vegetarisch":"yellow","tierisch":"brown"};
 const BIO_FILTER = "🌱 Bio-Produkte";  // Bio als Auswahl im Kategorie-Filter (Stempel abgelöst)
+// Öko-Siegel als Inline-SVG (selbst gezeichnet im Bio-Siegel-Stil – kein externes Bild/Hotlink)
+const BIO_SIEGEL = '<svg class="bio-siegel" width="20" height="18" viewBox="0 0 44 40" role="img" aria-label="Bio"><title>Bio – aus ökologischer Erzeugung</title><polygon points="13,2.5 31,2.5 42,20 31,37.5 13,37.5 2,20" fill="#e9f5df" stroke="#5a9e2f" stroke-width="3" stroke-linejoin="round"/><text x="22" y="26.5" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="16" font-weight="700" fill="#4a8a24">Bio</text></svg>';
 const ALLERGEN_COLOR = {"Glutenhaltiges Getreide":"yellow","Weizen":"yellow","Roggen":"yellow","Gerste":"yellow","Hafer":"yellow",
   "Milch":"blue","Laktose":"blue","Ei":"yellow","Soja":"green","Erdnuss":"brown","Schalenfrüchte / Nüsse":"brown","Fisch":"blue",
   "Krebstiere":"pink","Weichtiere":"pink","Sellerie":"green","Senf":"yellow","Sesam":"orange","Sulfite":"gray","Lupine":"green"};
@@ -620,7 +623,7 @@ function render(){
     const hk = hayKonform(f.hay_groups);
     tr.innerHTML = `
       <td class="cbcol"><input type="checkbox" class="rowcb" ${selected.has(f.id)?"checked":""}></td>
-      <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}${(f.ampel_reason&&f.ampel_reason.includes('⭐'))?'<span class="star" title="Rohkost/kaltgepresst — besonders schonend verarbeitet">⭐</span>':''}${((f.nachhaltigkeit)||[]).includes('bio')?'<span class="bio-leaf" title="Bio — aus ökologischer Erzeugung">🌱</span>':''}</td>
+      <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}${(f.ampel_reason&&f.ampel_reason.includes('⭐'))?'<span class="star" title="Rohkost/kaltgepresst — besonders schonend verarbeitet">⭐</span>':''}${((f.nachhaltigkeit)||[]).includes('bio')?BIO_SIEGEL:''}</td>
       <td class="namecell"><b>${esc(f.name)}</b>${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
       <td>${f.brand?esc(f.brand):'<span class="muted">—</span>'}</td>
       <td>${priceCell(f)}</td>
