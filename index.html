@@ -559,7 +559,20 @@ function sortKey(f){
     case "allergens": return (f.allergens||[]).join(",").toLowerCase();
     case "intolerances": return (f.intolerances||[]).join(",").toLowerCase();
     case "reviewed": return f.reviewed_by_ricarda?1:0;
-    default: return f.name.toLowerCase();
+    // Ricarda 09.08.: Für die Sortierung den Marken-Präfix ignorieren, damit
+    // gleichartige Produkte zusammenstehen (alle Fusilli beieinander statt
+    // alle ALB-GOLD). Die ANZEIGE bleibt der volle Name.
+    default: {
+      let k = f.name || "";
+      const b = (f.brand || "").trim();
+      if (b && k.toLowerCase().startsWith(b.toLowerCase())) k = k.slice(b.length);
+      // führende Füllwörter (mehrfach, beliebige Reihenfolge) entfernen
+      const FUELL = /^\s*(?:AG|GmbH|KG|SE|Bio|BIO|Demeter|Naturland)\b[\s,.-]*/;
+      let vorher;
+      do { vorher = k; k = k.replace(FUELL, ""); } while (k !== vorher);
+      k = k.trim().toLowerCase();
+      return k || f.name.toLowerCase();
+    }
   }
 }
 function render(){
