@@ -320,7 +320,7 @@ const AMPEL_ORDER = {GRUEN:1,GELB:2,ROT:3,GRAU:4};
 
 const HAY_COLOR = {"stärkearmes Gemüse/neutral":"green","Obst":"pink","Kohlenhydrat-Quelle":"yellow","Protein-Quelle":"red","Fett-Quelle":"orange","Hülsenfrüchte":"purple","unklar":"gray"};
 // Anzeige-Label (Wert bleibt technisch unverändert; nur die Darstellung ist klarer, z. B. für Getränke/Gewürze).
-const HAY_LABEL = {"stärkearmes Gemüse/neutral":"neutral (Gemüse/Getränke)"};
+const HAY_LABEL = {"stärkearmes Gemüse/neutral":"neutral"};  // Ricarda 09.08.: schlicht neutral, Getraenke nicht mit Gemuese zusammen anzeigen
 const hayLbl = v => HAY_LABEL[v] || v;
 const VEGAN_COLOR = {"vegan":"green","vegetarisch":"yellow","tierisch":"brown"};
 const BIO_FILTER = "🌱 Bio-Produkte";  // Bio als Auswahl im Kategorie-Filter (Stempel abgelöst)
