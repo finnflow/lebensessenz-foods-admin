@@ -534,6 +534,7 @@ $("#password").addEventListener("keydown",e=>{if(e.key==="Enter")$("#loginBtn").
 $("#logoutBtn").onclick = async ()=>{ await sb.auth.signOut(); location.reload(); };
 
 // ── Laden + Liste ──
+let KNOWN_BRANDS = [];
 async function loadFoods(){
   // Stapelweise laden — die Supabase-Daten-API liefert max. 1000 Zeilen pro Anfrage.
   // So skaliert die Übersicht auf zehntausende Lebensmittel.
@@ -545,7 +546,13 @@ async function loadFoods(){
     if(data.length < SIZE) break;
     from += SIZE;
   }
-  FOODS = all; render();
+  FOODS = all;
+  // Bekannte Marken für die Namens-Sortierung: aus ALLEN Produkten gesammelt,
+  // längste zuerst (damit „REWE Bio" vor „REWE" abgeschnitten wird).
+  KNOWN_BRANDS = [...new Set(all.map(f => (f.brand || "").trim().toLowerCase())
+                                .filter(b => b.length >= 3))]
+                  .sort((a, b) => b.length - a.length);
+  render();
 }
 function sortKey(f){
   switch(sortField){
@@ -559,19 +566,27 @@ function sortKey(f){
     case "allergens": return (f.allergens||[]).join(",").toLowerCase();
     case "intolerances": return (f.intolerances||[]).join(",").toLowerCase();
     case "reviewed": return f.reviewed_by_ricarda?1:0;
-    // Ricarda 09.08.: Für die Sortierung den Marken-Präfix ignorieren, damit
-    // gleichartige Produkte zusammenstehen (alle Fusilli beieinander statt
-    // alle ALB-GOLD). Die ANZEIGE bleibt der volle Name.
+    // Ricarda 09.08./15.08.: Für die Sortierung den Marken-Präfix ignorieren, damit
+    // gleichartige Produkte zusammenstehen. Nachgebessert am 15.08. — die erste Fassung
+    // ließ zwei Lücken: (1) Marke nur im NAMEN, Marken-Feld leer („Bio+ Börner-…"),
+    // (2) Zeichenreste nach dem Abschneiden („+", „,") führten die Sortierung an.
+    // Jetzt: bekannte Marken ALLER Produkte als Präfix-Liste, dazu Füllwörter und
+    // Satzzeichen, alles im Wechsel bis nichts mehr abfällt. ANZEIGE bleibt der volle Name.
     default: {
       let k = f.name || "";
-      const b = (f.brand || "").trim();
-      if (b && k.toLowerCase().startsWith(b.toLowerCase())) k = k.slice(b.length);
-      // führende Füllwörter (mehrfach, beliebige Reihenfolge) entfernen
-      const FUELL = /^\s*(?:AG|GmbH|KG|SE|Bio|BIO|Demeter|Naturland)\b[\s,.-]*/;
+      const FUELL = /^\s*(?:AG|GmbH|KG|SE|Bio\+?|BIO\+?|bio|Demeter|Naturland|vegan|veggie)\b[\s,.+&-]*/;
+      const PUNKT = /^[\s,.+&\-—–_/*']+/;
       let vorher;
-      do { vorher = k; k = k.replace(FUELL, ""); } while (k !== vorher);
+      do {
+        vorher = k;
+        const kl = k.toLowerCase();
+        for (const b of KNOWN_BRANDS) {
+          if (b && kl.startsWith(b)) { k = k.slice(b.length); break; }
+        }
+        k = k.replace(FUELL, "").replace(PUNKT, "");
+      } while (k !== vorher);
       k = k.trim().toLowerCase();
-      return k || f.name.toLowerCase();
+      return k || (f.name || "").toLowerCase();
     }
   }
 }
