@@ -574,8 +574,8 @@ function sortKey(f){
     // Satzzeichen, alles im Wechsel bis nichts mehr abfällt. ANZEIGE bleibt der volle Name.
     default: {
       let k = f.name || "";
-      const FUELL = /^\s*(?:AG|GmbH|KG|SE|Bio\+?|BIO\+?|bio|Demeter|Naturland|vegan|veggie)\b[\s,.+&-]*/;
-      const PUNKT = /^[\s,.+&\-—–_/*']+/;
+      const FUELL = /^[\s"„“”‚’»«›‹]*(?:AG|GmbH|KG|SE|Bio\+?|BIO\+?|bio|Demeter|Naturland|vegan|veggie)\b[\s,.+&-]*/;
+      const PUNKT = /^[\s,.+&\-—–_/*'"„“”‚’»«›‹()\[\]]+/;
       let vorher;
       do {
         vorher = k;
@@ -638,7 +638,11 @@ function render(){
     return true;
   });
   list.sort((a,b)=>{
-    const ka=sortKey(a),kb=sortKey(b); let c = ka<kb?-1:ka>kb?1:0;
+    const ka=sortKey(a),kb=sortKey(b);
+    // 17.08.: deutsches Alphabet statt Zeichencode — sonst sortieren Ș, é, „ außerhalb
+    let c = (typeof ka==='string' && typeof kb==='string')
+      ? ka.localeCompare(kb,'de',{sensitivity:'base'})
+      : (ka<kb?-1:ka>kb?1:0);
     if(c===0) c=a.name.localeCompare(b.name);
     return sortDir==="asc"?c:-c;
   });
@@ -970,7 +974,7 @@ function classifyZutat(tok, salt, isBio, sugar, fat, intrinsic){
   // 2. WARN hat höchste Priorität
   // 3. Salz mengenabhängig (nur generisches "Salz"/"Speisesalz"/"Kochsalz", nicht Pökelsalz/Schmelzsalz etc.)
   if(/\b\w*salz\b/.test(t) && !t.includes('pökelsalz') && !t.includes('schmelzsalz') && !t.includes('würzsalz') && !t.includes('kräutersalz') && !t.includes('rauchsalz') && !t.includes('salzsäure')){
-    return (salt!=null && salt>1.5) ? 'bad' : 'neu';
+    return (salt!=null && salt>=1.5) ? 'bad' : 'neu';  // 15.08.: Schwelle einschließend
   }
   // 3b. Mais-Familie: neutral, aber bei Bio (Produkt-Bio oder Bio-Sternchen) grün — Bio-Mais ist gentechnikfrei
   if((isBio || t.includes('*')) && !t.includes('modifiziert') && !t.includes('wachsmais') && /mais(mehl|grieß|griess|stärke|staerke)/.test(t)) return 'good';
