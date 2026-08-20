@@ -93,6 +93,7 @@
   .cbcol{width:36px;text-align:center;padding-left:8px;padding-right:8px}
   .cbcol input{width:16px;height:16px;cursor:pointer;accent-color:var(--accent)}
   td.namecell{cursor:pointer;white-space:normal;word-break:break-word}
+  td.namecell .brandpfx{color:#9a9a9a;font-weight:400}
   td.namecell:hover b{text-decoration:underline}
   td.namecell .rowthumb{display:block;margin-top:5px;width:60px;height:60px;object-fit:contain;
     background:#fff;border:1px solid var(--line);border-radius:8px;padding:2px}
@@ -574,7 +575,19 @@ function sortKey(f){
     // (2) Zeichenreste nach dem Abschneiden („+", „,") führten die Sortierung an.
     // Jetzt: bekannte Marken ALLER Produkte als Präfix-Liste, dazu Füllwörter und
     // Satzzeichen, alles im Wechsel bis nichts mehr abfällt. ANZEIGE bleibt der volle Name.
-    default: {
+    default: return nameSortRest(f).toLowerCase() || (f.name || "").toLowerCase();
+  }
+}
+// Liefert den sortier-relevanten Namens-REST (Original-Schreibweise) — alles vor dem
+// Rest ist Marke/Füllwort/Zeichenrest. Wird auch für die Anzeige genutzt (grauer Präfix).
+function nameHtml(f){
+  const name = f.name || "";
+  const rest = nameSortRest(f);
+  const i = rest ? name.length - rest.length : 0;
+  if (i <= 0 || i >= name.length) return `<b>${esc(name)}</b>`;
+  return `<span class="brandpfx">${esc(name.slice(0, i))}</span><b>${esc(name.slice(i))}</b>`;
+}
+function nameSortRest(f){
       let k = f.name || "";
       const FUELL = /^[\s"„“”‚’»«›‹]*(?:AG|GmbH|KG|SE|Bio\+?|BIO\+?|bio|Demeter|Naturland|vegan|veggie)\b[\s,.+&-]*/;
       const PUNKT = /^[\s,.+&\-—–_/*'"„“”‚’»«›‹()\[\]´`ʼ‘|®™©]+/;
@@ -587,10 +600,7 @@ function sortKey(f){
         }
         k = k.replace(FUELL, "").replace(PUNKT, "");
       } while (k !== vorher);
-      k = k.trim().toLowerCase();
-      return k || (f.name || "").toLowerCase();
-    }
-  }
+      return k.trim();
 }
 function render(){
   const q=$("#search").value.trim().toLowerCase(), st=$("#fStatus").value, unrev=$("#fUnreviewed").checked;
@@ -658,7 +668,7 @@ function render(){
     tr.innerHTML = `
       <td class="cbcol"><input type="checkbox" class="rowcb" ${selected.has(f.id)?"checked":""}></td>
       <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}${(f.ampel_reason&&f.ampel_reason.includes('⭐'))?'<span class="star" title="Rohkost/kaltgepresst — besonders schonend verarbeitet">⭐</span>':''}${((f.nachhaltigkeit)||[]).includes('bio')?BIO_SIEGEL:''}</td>
-      <td class="namecell"><b>${esc(f.name)}</b>${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
+      <td class="namecell">${nameHtml(f)}${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
       <td>${f.brand?esc(f.brand):'<span class="muted">—</span>'}</td>
       <td>${priceCell(f)}</td>
       <td class="editable" data-field="category">${f.category?esc(f.category):'<span class="muted">—</span>'}</td>
