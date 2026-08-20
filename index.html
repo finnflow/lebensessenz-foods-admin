@@ -577,7 +577,7 @@ function sortKey(f){
     default: {
       let k = f.name || "";
       const FUELL = /^[\s"„“”‚’»«›‹]*(?:AG|GmbH|KG|SE|Bio\+?|BIO\+?|bio|Demeter|Naturland|vegan|veggie)\b[\s,.+&-]*/;
-      const PUNKT = /^[\s,.+&\-—–_/*'"„“”‚’»«›‹()\[\]]+/;
+      const PUNKT = /^[\s,.+&\-—–_/*'"„“”‚’»«›‹()\[\]´`ʼ‘|®™©]+/;
       let vorher;
       do {
         vorher = k;
