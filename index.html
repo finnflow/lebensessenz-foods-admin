@@ -590,6 +590,9 @@ function nameHtml(f){
 function nameSortRest(f){
       let k = f.name || "";
       const FUELL = /^[\s"„“”‚’»«›‹]*(?:AG|GmbH|KG|SE|Bio\+?|BIO\+?|bio|Demeter|Naturland|vegan|veggie)\b[\s,.+&-]*/;
+      // 20.08. (Ricarda): Mengen-/Portionsangaben führen nicht das Sortierwort an —
+      // "1 Portion Erbsen-Eintopf" sortiert bei E, "100% natives Olivenöl" bei O.
+      const MENGE = /^(?:\d+(?:[.,\/]\d+)?\s*%|\d+(?:[.,\/]\d+)?\s*(?:g|kg|ml|l|liter|stück|stk|x|er)\b|\d+(?:[.,\/]\d+)?\b|portion(?:en)?\b|dosen?\b|flaschen?\b|beutel\b|packung\b|päckchen\b|pack\b|tüten?\b|glas\b|becher\b|supreme\b|premium\b|original\b|classic\b|natives?\b|nativ\b|feine?s?r?\b|halbe?r?\b)[\s,.+&-]*/i;
       const PUNKT = /^[\s,.+&\-—–_/*'"„“”‚’»«›‹()\[\]´`ʼ‘|®™©]+/;
       let vorher;
       do {
@@ -598,7 +601,7 @@ function nameSortRest(f){
         for (const b of KNOWN_BRANDS) {
           if (b && kl.startsWith(b)) { k = k.slice(b.length); break; }
         }
-        k = k.replace(FUELL, "").replace(PUNKT, "");
+        k = k.replace(FUELL, "").replace(MENGE, "").replace(PUNKT, "");
       } while (k !== vorher);
       return k.trim();
 }
