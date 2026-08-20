@@ -306,9 +306,11 @@
 <script>
 const sb = supabase.createClient(window.LE_CONFIG.url, window.LE_CONFIG.key);
 
-const CATEGORIES = ["Getreide / Backwaren","Kartoffeln / Reis / Pasta","Milchprodukte","Fleisch / Wurst",
-  "Fisch / Meeresfrüchte","Eier","Gemüse / Salat","Obst","Hülsenfrüchte / Soja","Nüsse / Samen",
-  "Fette / Öle","Saucen / Würzen","Süßes / Snacks","Getränke","Fertigprodukt / Convenience","Backzutaten","Süßungsmittel"];
+const CATEGORIES = ["Getreide & Mehle","Brot & Backwaren","Cerealien & Müsli","Kartoffeln / Reis / Pasta",
+  "Milchprodukte","Fleisch / Wurst","Fisch / Meeresfrüchte","Eier","Gemüse / Salat","Obst",
+  "Hülsenfrüchte / Soja","Nüsse / Samen","Fette / Öle","Saucen / Würzen","Gewürze & Kräuter",
+  "Brotaufstriche","Süßes / Snacks","Salzige Snacks","Getränke","Tee & Kaffee",
+  "Fertigprodukt / Convenience","Babynahrung","Backzutaten","Süßungsmittel"];
 const HAY = ["stärkearmes Gemüse/neutral","Obst","Kohlenhydrat-Quelle","Protein-Quelle","Fett-Quelle","Hülsenfrüchte","unklar"];
 const VEGAN = ["vegan","vegetarisch","tierisch"];
 const ALLERGENS = ["Glutenhaltiges Getreide","Weizen","Roggen","Gerste","Hafer","Milch","Laktose","Ei","Soja",
