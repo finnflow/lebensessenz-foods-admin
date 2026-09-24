@@ -294,10 +294,10 @@
     <span id="bulkCount"></span>
     <button class="btn ghost" id="deselectBtn">Abwählen</button>
     <button class="btn" id="confirmBtn">✓ Ausgewählte bestätigen</button>
-    <button class="btn danger" id="deleteBtn">🗑 Ausgewählte löschen</button>
+    <button class="btn danger" id="deleteBtn">🗑 In den Papierkorb</button>
   </div>
 
-  <div class="hint-bar">💡 Zelle anklicken zum Ändern (Kategorie · Vegan · Trennkost-Gruppe · Ampel · Allergene · Unverträglichkeiten). „Geprüft" anklicken = bestätigt ↔ offen (Trennkost-Gruppe setzen = automatisch abgesegnet → geht live). Name anklicken = alle Details. Spalten-Überschrift anklicken = sortieren. Box links = auswählen (mit ⇧ mehrere; dann oben „✓ bestätigen").</div>
+  <div class="hint-bar">💡 Zelle anklicken zum Ändern (Kategorie · Vegan · Trennkost-Gruppe · Ampel · Allergene · Unverträglichkeiten). „Geprüft" anklicken = Freigabe mit Notiz (wird im Freigabe-Register festgehalten; Speichern bestätigt nichts). Name anklicken = alle Details. Spalten-Überschrift anklicken = sortieren. Box links = auswählen (mit ⇧ mehrere; dann oben „✓ bestätigen").</div>
 
   <div class="wrap">
     <table>
@@ -820,20 +820,41 @@ $("#selAll").onclick=()=>{
   lastIdx=null; render();
 };
 $("#deselectBtn").onclick=()=>{ selected.clear(); lastIdx=null; render(); };
+// Freigabe „von uns geprüft“ nur ausdrücklich und mit Spur im Register `freigaben`
+// (wie lebensmittel_freigeben im Connector; seit 02.09.2026 der einzige Weg zum Haken).
+// Fehlt das Register, wird NICHT freigegeben — sonst stünde ein Haken ohne Spur da.
+async function freigabeMitSpur(rows, flag, umfang){
+  const notiz = prompt(`${flag?"Freigabe":"Freigabe zurücknehmen"} für ${rows.length} Lebensmittel — kurze Notiz (z. B. „Liste am 25.09. durchgegangen“):`, "");
+  if(notiz===null) return false;
+  const spur = rows.map(f=>({food_id:f.id, item_id:f.item_id, name:f.name, freigegeben:flag, wer:"pflege-oberflaeche", notiz:notiz||null, umfang, gruppe:null}));
+  const s1 = await sb.from("freigaben").insert(spur);
+  if(s1.error){ alert("Freigabe-Register nicht erreichbar — nichts geändert: "+s1.error.message); return false; }
+  const {error} = await sb.from("foods").update({reviewed_by_ricarda:flag}).in("id", rows.map(f=>f.id));
+  if(error){ alert("Fehler beim Bestätigen: "+error.message); return false; }
+  rows.forEach(f=>{ f.reviewed_by_ricarda=flag; });
+  return true;
+}
 $("#confirmBtn").onclick=async()=>{
-  const ids=[...selected]; if(!ids.length) return;
-  const {error}=await sb.from("foods").update({reviewed_by_ricarda:true}).in("id",ids);
-  if(error){ alert("Fehler beim Bestätigen: "+error.message); return; }
-  FOODS.forEach(f=>{ if(selected.has(f.id)) f.reviewed_by_ricarda=true; });
-  render();
+  const rows=FOODS.filter(f=>selected.has(f.id)); if(!rows.length) return;
+  if(await freigabeMitSpur(rows, true, rows.length>1?"auswahl":"einzeln")) render();
 };
+// Löschen geht nur noch über den Papierkorb (Ricardas Regel seit 12.09.2026): Status „archived“,
+// Grund + vorheriger Status als erste Zeile im Hinweis-Feld — gleiches Format wie papierkorb_hinein
+// im Connector, damit papierkorb_heraus dort zurückholen kann. Endgültig löscht nur Ricardas Chat.
 $("#deleteBtn").onclick=async()=>{
-  const ids=[...selected]; if(!ids.length) return;
-  const names=visibleRows.filter(f=>selected.has(f.id)).map(f=>f.name).slice(0,5).join(", ");
-  if(!confirm(`${ids.length} Lebensmittel wirklich löschen?\n\n${names}${ids.length>5?" …":""}\n\nDas kann nicht rückgängig gemacht werden.`)) return;
-  const {error}=await sb.from("foods").delete().in("id",ids);
-  if(error){ alert("Fehler beim Löschen: "+error.message); return; }
-  FOODS=FOODS.filter(f=>!selected.has(f.id)); selected.clear(); lastIdx=null; render();
+  const rows=FOODS.filter(f=>selected.has(f.id) && f.status!=="archived"); if(!rows.length) return;
+  const names=rows.map(f=>f.name).slice(0,5).join(", ");
+  const grund=prompt(`${rows.length} Lebensmittel in den Papierkorb legen?\n\n${names}${rows.length>5?" …":""}\n\nFür Kund:innen sofort unsichtbar, zurückholbar. Grund (ein Satz):`, "");
+  if(grund===null) return;
+  const heute=new Date().toISOString().slice(0,10), g=grund.split(/\s+/).join(" ").trim();
+  for(const f of rows){
+    const zeile=`🗑️ Papierkorb seit ${heute} (pflege-oberflaeche, vorher: ${f.status||"draft"})`+(g?`: ${g}`:"");
+    const note=f.public_note ? zeile+"\n"+f.public_note : zeile;
+    const res=await sb.from("foods").update({status:"archived", public_note:note}).eq("id",f.id).select(EDIT_COLS).single();
+    if(res.error){ alert(`Fehler bei „${f.name}“: `+res.error.message); break; }
+    const i=FOODS.findIndex(x=>x.id===f.id); if(i>=0) FOODS[i]=res.data;
+  }
+  selected.clear(); lastIdx=null; render();
 };
 
 // ── Sortieren ──
@@ -878,18 +899,15 @@ function showPop(html,cell){
   pop.classList.add("open");
 }
 async function saveField(food,field,value){
-  // Ändern bestätigt automatisch (= abgesegnet); der Geprüft-Haken bleibt zusätzlich manuell umschaltbar.
-  const res=await sb.from("foods").update({[field]:value, reviewed_by_ricarda:true}).eq("id",food.id).select(EDIT_COLS).single();
+  // Ändern bestätigt NICHTS (seit 02.09.2026): der Geprüft-Haken ist ein eigener, ausdrücklicher Schritt mit Spur.
+  const res=await sb.from("foods").update({[field]:value}).eq("id",food.id).select(EDIT_COLS).single();
   if(res.error){ alert("Fehler: "+res.error.message); return; }
   const i=FOODS.findIndex(x=>x.id===food.id); if(i>=0) FOODS[i]=res.data;
   closePop(); render();
 }
 // Geprüft umschalten (bestätigt ↔ offen) — eigener Klick auf die Geprüft-Zelle
 async function toggleReviewed(food){
-  const res=await sb.from("foods").update({reviewed_by_ricarda:!food.reviewed_by_ricarda}).eq("id",food.id).select(EDIT_COLS).single();
-  if(res.error){ alert("Fehler: "+res.error.message); return; }
-  const i=FOODS.findIndex(x=>x.id===food.id); if(i>=0) FOODS[i]=res.data;
-  render();
+  if(await freigabeMitSpur([food], !food.reviewed_by_ricarda, "einzeln")) render();
 }
 
 // ── Schublade ──
@@ -1489,10 +1507,14 @@ $("#saveBtn").onclick=async()=>{
     ampel_reason:dval("e_ampel_reason"),trennkost_note:dval("e_trennkost_note"),
     health_note:dval("e_health_note"),ganzheitlich_note:dval("e_ganzheitlich_note"),public_note:dval("e_public_note"),
     hay_groups:dmulti("hay_groups"),allergens:dmulti("allergens"),intolerances:dmulti("intolerances"),
-    ingredients:dval("e_ingredients"),nutrition:dval("e_nutrition"),stores:dmulti("stores"),price:($("#e_price").value!==""?Number($("#e_price").value):null),image_url:drawerImageUrl,reviewed_by_ricarda:true};
+    ingredients:dval("e_ingredients"),nutrition:dval("e_nutrition"),stores:dmulti("stores"),price:($("#e_price").value!==""?Number($("#e_price").value):null),image_url:drawerImageUrl};
   let res;
-  if(current.__new){ payload.item_id=slug(name); payload.status="draft"; payload.source="manual";
-    res=await sb.from("foods").insert(payload).select(EDIT_COLS).single(); }
+  if(current.__new){ payload.status="draft"; payload.source="manual";
+    for(let n=1;n<=20;n++){   // Slug belegt (z. B. vom Markenimport)? → _2, _3 … statt Fehler
+      payload.item_id = n===1 ? slug(name) : `${slug(name)}_${n}`;
+      res=await sb.from("foods").insert(payload).select(EDIT_COLS).single();
+      if(!(res.error && res.error.code==="23505" && /item_id/.test(res.error.message||""))) break;
+    } }
   else res=await sb.from("foods").update(payload).eq("id",current.id).select(EDIT_COLS).single();
   if(res.error){ $("#saveMsg").textContent="Fehler: "+res.error.message; $("#saveMsg").className="savemsg err"; return; }
   const i=FOODS.findIndex(x=>x.id===res.data.id); if(i>=0) FOODS[i]=res.data; else FOODS.push(res.data);
