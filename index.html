@@ -185,6 +185,13 @@
   #cellpop .ampel-row button.sel{opacity:1;border-width:2px}
 
   /* Detail-Profil (read-only) oben in der Schublade — inkl. berechneter Daten-Sicherheit (Sicher/Geschätzt) */
+  .marken{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:20px}
+  .marken summary{font-size:13px;font-weight:600;cursor:pointer}
+  .marken .mz-hint{font-size:12px;color:var(--muted);margin:6px 0}
+  .marken ul{list-style:none;margin:6px 0 0;padding:0;max-height:260px;overflow:auto}
+  .marken li{display:flex;align-items:center;gap:8px;padding:4px 0;border-top:1px solid var(--line);font-size:13px}
+  .marken li a{cursor:pointer;color:inherit;text-decoration:underline;text-decoration-color:var(--line)}
+  .marken .mz-st{margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap}
   .profile{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:20px;background:#fbf8f3}
   .profile .pv{display:flex;align-items:center;gap:10px;margin-bottom:13px;flex-wrap:wrap}
   .profile .pv-badge{font-weight:700;font-size:14px;padding:3px 12px;border-radius:999px}
@@ -329,6 +336,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
 <script src="./grundlebensmittel.js"></script>
+<script src="./markenzuordnung.js"></script>
 <script>
 const sb = supabase.createClient(window.LE_CONFIG.url, window.LE_CONFIG.key);
 
@@ -1371,12 +1379,36 @@ function profileCard(f){
     </dl>
   </div>`;
 }
+// ── Grundlebensmittel → passende Markenprodukte (Ricarda, Mappe Eintrag 46, 24.09.2026) ──
+// Die Zuordnung liegt im Connector-Repo (ansichten/markenzuordnung.json) und kommt per admin_sync
+// hierher. Nur Anzeige: jede Zuordnung ist erst ein Vorschlag, bis Ricarda/das Fachteam sie bestätigt.
+const MARKEN = window.LE_MARKEN || {};
+const MARKE_ZU_GRUND = {};
+Object.entries(MARKEN).forEach(([gid, ps]) => ps.forEach(([pid, st]) => (MARKE_ZU_GRUND[pid] = MARKE_ZU_GRUND[pid] || []).push([gid, st])));
+const MZ_ST = {vorschlag:"Vorschlag", bestaetigt:"✓ bestätigt"};
+function markenBox(f){
+  const byId = id => FOODS.find(x => x.id === id);
+  const item = ([id, st]) => { const x = byId(id); if(!x) return "";
+    return `<li><span class="dot ${x.ampel||'none'}"></span><a data-open="${esc(id)}">${esc(x.name)}</a><span class="mz-st">${MZ_ST[st]||esc(st)}</span></li>`; };
+  const eigene = MARKEN[f.id], zu = MARKE_ZU_GRUND[f.id];
+  if(eigene && eigene.length){
+    const offen = eigene.filter(([,st]) => st === "vorschlag").length;
+    return `<details class="marken"><summary>🔗 Passende Markenprodukte (${eigene.length})</summary>
+      <div class="mz-hint">${offen ? `${offen} davon Vorschlag — gilt erst, wenn Ricarda oder das Fachteam es bestätigt.` : "Alle bestätigt."} Jedes Produkt hat eigene Zutaten, Ampel und Barcode.</div>
+      <ul>${eigene.map(item).join("")}</ul></details>`;
+  }
+  if(zu && zu.length){
+    return `<details class="marken" open><summary>🔗 Gehört zum Grundlebensmittel</summary><ul>${zu.map(item).join("")}</ul></details>`;
+  }
+  return "";
+}
 function openDrawer(food){
   current = food || {__new:true,status:"draft",hay_groups:[],allergens:[],intolerances:[]};
   $("#drawerTitle").textContent = food ? food.name : "Neues Lebensmittel";
   $("#saveMsg").textContent=""; const f=current; drawerImageUrl = f.image_url || null;
   $("#drawerBody").innerHTML=`
     ${food?profileCard(f):""}
+    ${food?markenBox(f):""}
     <div class="field"><label>Foto</label>
       <div id="photoPreview"></div>
       <div class="photo-actions">
@@ -1443,6 +1475,7 @@ function openDrawer(food){
   bindEditToggle("prev_nutrition","e_nutrition");
   refreshPrev();
   setupPhoto();
+  $("#drawerBody").querySelectorAll("[data-open]").forEach(a=>a.onclick=()=>{const x=FOODS.find(y=>y.id===a.dataset.open); if(x) openDrawer(x);});
   $("#scrim").classList.add("show"); $("#drawer").classList.add("show");
 }
 const dval=id=>{const e=$("#"+id);return e&&e.value.trim()?e.value.trim():null;};
