@@ -26,6 +26,18 @@
   .rsn-prev div{margin:1px 0}
   .prevlabel{font-size:11px;color:var(--muted);margin:0 0 3px}
 
+
+  /* Ansichten Grundlebensmittel-DB / Erweiterte LM-DB (Ricarda 2026-09-24) */
+  .viewswitch{display:flex;gap:6px;flex-wrap:wrap;padding:14px 20px 0}
+  .viewswitch button{padding:9px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-weight:600;display:flex;gap:8px;align-items:baseline}
+  .viewswitch button small{font-weight:500;color:var(--muted);font-size:12.5px}
+  .viewswitch button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .viewswitch button.on small{color:#fff;opacity:.9}
+  .viewstats{display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding:10px 20px 0;font-size:14px}
+  .viewstats b{font-size:16px;font-variant-numeric:tabular-nums}
+  .viewstats .vs-ok b{color:var(--gruen)} .viewstats .vs-open b{color:var(--rot)}
+  .viewstats button{padding:6px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;font-weight:600;font-size:13px}
+
   /* Login */
   #login{min-height:100vh;display:grid;place-items:center;padding:24px}
   #login .box{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:32px;width:100%;max-width:380px}
@@ -205,6 +217,18 @@
     <button class="btn ghost" id="logoutBtn">Abmelden</button>
   </header>
 
+  <div class="viewswitch" id="viewSwitch" role="tablist" aria-label="Ansicht">
+    <button type="button" data-view="" role="tab">Alle Lebensmittel <small id="vcAll"></small></button>
+    <button type="button" data-view="grund" role="tab">Grundlebensmittel-DB <small id="vcGrund"></small></button>
+    <button type="button" data-view="erweitert" role="tab">Erweiterte LM-DB <small id="vcErw"></small></button>
+  </div>
+  <div class="viewstats hidden" id="viewStats">
+    <span><b id="vsTotal"></b> Lebensmittel</span>
+    <span class="vs-ok"><b id="vsOk"></b> geprüft</span>
+    <span class="vs-open"><b id="vsOpen"></b> offen</span>
+    <button type="button" id="vsShowOpen">Offene als Liste zeigen</button>
+  </div>
+
   <div class="controls">
     <input type="search" id="search" placeholder="Suche nach Name…" />
     <button class="btn filtertoggle" id="filterToggle" type="button">⚲ Filter <span class="fcount" id="filterCount" style="display:none"></span> ▾</button>
@@ -304,6 +328,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
+<script src="./grundlebensmittel.js"></script>
 <script>
 const sb = supabase.createClient(window.LE_CONFIG.url, window.LE_CONFIG.key);
 
@@ -618,6 +643,7 @@ function render(){
       else { const vals=flt.field(f); ok = flt.mode==="or" ? [...chosen].some(c=>vals.includes(c)) : [...chosen].every(c=>vals.includes(c)); }
       if(!ok) return false;
     }
+    if(!inView(f, VIEW)) return false;
     if(st && f.status!==st) return false;
     if(unrev && f.reviewed_by_ricarda) return false;
     // ★ Durchsicht-Listen (Ricarda 2026-08-05): dieselben Erkennungen wie im Generator,
@@ -662,7 +688,9 @@ function render(){
     return sortDir==="asc"?c:-c;
   });
   visibleRows = list;
-  $("#count").textContent = `${list.length} von ${FOODS.length} Lebensmitteln`;
+  const _basis = VIEW ? viewCounts(VIEW).total : FOODS.length;
+  $("#count").textContent = `${list.length} von ${_basis} Lebensmitteln`;
+  renderViewSwitch();
   const tb=$("#rows"); tb.innerHTML="";
   list.forEach((f,idx)=>{
     const tr=document.createElement("tr");
@@ -699,6 +727,41 @@ function render(){
   syncFilterUI();
 }
 ["#search","#fStatus","#fUnreviewed","#fDurchsicht"].forEach(s=>$(s).addEventListener("input",render));
+
+// ── Ansichten: Grundlebensmittel-DB / Erweiterte LM-DB (Ricarda 2026-09-24) ──
+// Nur eine Filter-Ansicht auf dieselben Daten: nichts wird gelöscht oder umgebaut.
+// Papierkorb (status "archived") zählt in keiner der beiden Ansichten mit.
+let VIEW = ""; try { VIEW = localStorage.getItem("le_view") || ""; } catch(e) {}
+const GRUND_EXTRA = new Set(window.LE_GRUND_EXTRA || []);
+function isGrund(f){ return f.source === "ontology" || GRUND_EXTRA.has(f.id); }
+function inView(f, v){
+  if(!v) return true;
+  if(f.status === "archived") return false;
+  return v === "grund" ? isGrund(f) : !isGrund(f);
+}
+function viewCounts(v){
+  const a = FOODS.filter(f => inView(f, v)), ok = a.filter(f => f.reviewed_by_ricarda).length;
+  return {total:a.length, ok, open:a.length-ok};
+}
+function renderViewSwitch(){
+  const de = n => n.toLocaleString("de-DE");
+  const g = viewCounts("grund"), e = viewCounts("erweitert");
+  $("#vcAll").textContent = de(FOODS.length);
+  $("#vcGrund").textContent = `${de(g.total)} · ${de(g.open)} offen`;
+  $("#vcErw").textContent = `${de(e.total)} · ${de(e.open)} offen`;
+  document.querySelectorAll("#viewSwitch button").forEach(b => {
+    const on = b.dataset.view === VIEW; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on));
+  });
+  $("#viewStats").classList.toggle("hidden", !VIEW);
+  if(VIEW){ const c = VIEW === "grund" ? g : e;
+    $("#vsTotal").textContent = de(c.total); $("#vsOk").textContent = de(c.ok); $("#vsOpen").textContent = de(c.open); }
+}
+document.querySelectorAll("#viewSwitch button").forEach(b => b.onclick = () => {
+  VIEW = b.dataset.view; try { localStorage.setItem("le_view", VIEW); } catch(e) {}
+  render();
+});
+$("#vsShowOpen").onclick = () => { $("#fUnreviewed").checked = true; render(); };
+
 
 // ── Kompakter Filter: Panel auf/zu, Zähler, aktive Chips ──
 $("#filterToggle").onclick=()=>$("#filterPanel").classList.toggle("open");
