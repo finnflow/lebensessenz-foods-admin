@@ -632,7 +632,9 @@ function nameSortRest(f){
         vorher = k;
         const kl = k.toLowerCase();
         for (const b of KNOWN_BRANDS) {
-          if (b && kl.startsWith(b)) { k = k.slice(b.length); break; }
+          // 25.09. (Sibylle/Ricarda): nur als GANZES Wort abschneiden — sonst wurde „Wasa“ von
+          // „Wasabi“, „Vegeta“ von „Vegetarisch…“, „Granata“ von „Granatapfel“ usw. als Marke grau.
+          if (b && kl.startsWith(b) && !/[0-9a-zäöüß]/i.test(kl.charAt(b.length))) { k = k.slice(b.length); break; }
         }
         k = k.replace(FUELL, "").replace(MENGE, "").replace(PUNKT, "");
       } while (k !== vorher);
