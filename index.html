@@ -741,7 +741,8 @@ function render(){
 // Papierkorb (status "archived") zählt in keiner der beiden Ansichten mit.
 let VIEW = ""; try { VIEW = localStorage.getItem("le_view") || ""; } catch(e) {}
 const GRUND_EXTRA = new Set(window.LE_GRUND_EXTRA || []);
-function isGrund(f){ return f.source === "ontology" || GRUND_EXTRA.has(f.id); }
+const GRUND_SOURCES = new Set(window.LE_GRUND_SOURCES || ["ontology"]);   // seit G148 (25.09.) auch notion_v3
+function isGrund(f){ return GRUND_SOURCES.has(f.source) || GRUND_EXTRA.has(f.id); }
 function inView(f, v){
   if(!v) return true;
   if(f.status === "archived") return false;
