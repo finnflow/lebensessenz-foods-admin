@@ -243,6 +243,7 @@
       <option value="">Alle</option>
       <option value="draft">Nur neue (Entwurf)</option>
       <option value="published">Nur veröffentlicht</option>
+      <option value="archived">🗑 Papierkorb</option>
     </select>
     <label><input type="checkbox" id="fUnreviewed" /> nur unbestätigte</label>
     <select id="fDurchsicht" title="Offene Durchsicht-Listen (Ricarda 2026-08-05)">
@@ -1385,7 +1386,7 @@ function renderNaehrwerteBold(text){
 // berechnete Daten-Sicherheit und fasst die Kerndaten des Lebensmittels auf einen Blick zusammen.
 function profileCard(f){
   const conf=dataConfidence(f), hk=hayKonform(f.hay_groups);
-  const statusLabel = f.status==="published" ? "Veröffentlicht (live)" : f.status==="draft" ? "Entwurf (noch nicht live)" : (f.status||"—");
+  const statusLabel = f.status==="published" ? "Veröffentlicht (live)" : f.status==="draft" ? "Entwurf (noch nicht live)" : f.status==="archived" ? "🗑 Im Papierkorb (für Kund:innen unsichtbar, zurückholbar)" : (f.status||"—");
   const srcLabel = f.source==="manual" ? "manuell angelegt" : (f.source||"—");
   const ampelLabel = (AMPEL.find(([v])=>v===f.ampel)||[null,"—"])[1];
   const cell=(dt,dd)=>`<div><dt>${dt}</dt><dd>${dd}</dd></div>`;
