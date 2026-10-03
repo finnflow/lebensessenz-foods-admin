@@ -376,6 +376,10 @@ const FIELD_META = {
   intolerances:{label:"Unverträglichkeiten",  opts:INTOL,      multi:true,  color:INTOL_COLOR},
 };
 const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,ampel_reason,health_note,ganzheitlich_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition,image_url,nachhaltigkeit,brand,stores,price";
+// Schlanke Spalten für die Liste (Ricarda 03.10.2026: „lädt ultra lange“). Die langen Texte
+// (Ampel-Begründung, Gesundheit, Ganzheitlich, Trennkost, Nährwerte) kommen erst beim Öffnen
+// eines Lebensmittels — nur für dieses eine (siehe openDrawer). Spart rund zwei Drittel der Daten.
+const LIST_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,public_note,allergens,intolerances,ingredients,image_url,nachhaltigkeit,brand,stores,price";
 
 const STORES = ["Edeka","Rewe","Kaufland","Aldi","Lidl","Penny","Netto","dm","Rossmann","Müller","Budni","Bioladen","Alnatura","Denn's","Reformhaus","Online-Shop"];
 // Preis RELATIV zur Kategorie: günstig/teuer wird an ähnlichen Produkten gemessen
@@ -574,14 +578,32 @@ $("#logoutBtn").onclick = async ()=>{ await sb.auth.signOut(); location.reload()
 let KNOWN_BRANDS = [];
 async function loadFoods(){
   // Stapelweise laden — die Supabase-Daten-API liefert max. 1000 Zeilen pro Anfrage.
-  // So skaliert die Übersicht auf zehntausende Lebensmittel.
-  const SIZE = 1000; let all = [], from = 0;
-  while(true){
-    const {data,error} = await sb.from("foods").select(EDIT_COLS).order("name").range(from, from+SIZE-1);
-    if(error){ alert("Fehler beim Laden: "+error.message); return; }
-    all = all.concat(data);
-    if(data.length < SIZE) break;
-    from += SIZE;
+  // Seit 03.10.2026: nur die schlanken Listen-Spalten, mehrere Stapel gleichzeitig, mit Fortschritt.
+  const SIZE = 1000, PARALLEL = 5, cnt = $("#count");
+  const head = await sb.from("foods").select("id", {count:"exact", head:true});
+  if(head.error){ alert("Fehler beim Laden: "+head.error.message); return; }
+  const total = head.count || 0, pages = Math.max(1, Math.ceil(total / SIZE));
+  const parts = new Array(pages); let done = 0;
+  if(cnt) cnt.textContent = `Lade ${total.toLocaleString("de-DE")} Lebensmittel …`;
+  const holeSeite = async i => {
+    // Sortierung nach Name UND id: sonst können gleichnamige Einträge zwischen zwei Stapeln verrutschen.
+    const {data,error} = await sb.from("foods").select(LIST_COLS).order("name").order("id")
+                                 .range(i*SIZE, i*SIZE+SIZE-1);
+    if(error) throw error;
+    parts[i] = data; done++;
+    if(cnt) cnt.textContent = `Lade … ${Math.min(done*SIZE, total).toLocaleString("de-DE")} von ${total.toLocaleString("de-DE")}`;
+  };
+  try{
+    for(let i=0; i<pages; i+=PARALLEL){
+      await Promise.all(Array.from({length:Math.min(PARALLEL, pages-i)}, (_,k)=>holeSeite(i+k)));
+    }
+  }catch(error){ alert("Fehler beim Laden: "+error.message); return; }
+  let all = [].concat(...parts);
+  // Falls während des Ladens etwas dazukam: der letzte Stapel war voll → Rest nachholen.
+  for(let from = pages*SIZE; parts[pages-1] && parts[pages-1].length === SIZE; from += SIZE){
+    const {data,error} = await sb.from("foods").select(LIST_COLS).order("name").order("id").range(from, from+SIZE-1);
+    if(error || !data.length) break;
+    all = all.concat(data); parts[pages-1] = data;
   }
   FOODS = all;
   // Bekannte Marken für die Namens-Sortierung: aus ALLEN Produkten gesammelt,
@@ -589,6 +611,18 @@ async function loadFoods(){
   KNOWN_BRANDS = [...new Set(all.map(f => (f.brand || "").trim().toLowerCase())
                                 .filter(b => b.length >= 3))]
                   .sort((a, b) => b.length - a.length);
+  render();
+  ladeSterne(); // ⭐ (Rohkost/kaltgepresst) steht in der Ampel-Begründung → nur die IDs nachladen
+}
+async function ladeSterne(){
+  const SIZE = 1000, ids = new Set();
+  for(let from = 0; ; from += SIZE){
+    const {data,error} = await sb.from("foods").select("id").ilike("ampel_reason","%⭐%").order("id").range(from, from+SIZE-1);
+    if(error || !data) return;
+    data.forEach(r => ids.add(r.id));
+    if(data.length < SIZE) break;
+  }
+  FOODS.forEach(f => { if(ids.has(f.id)) f.stern = true; });
   render();
 }
 function sortKey(f){
@@ -709,7 +743,7 @@ function render(){
     const hk = hayKonform(f.hay_groups);
     tr.innerHTML = `
       <td class="cbcol"><input type="checkbox" class="rowcb" ${selected.has(f.id)?"checked":""}></td>
-      <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}${(f.ampel_reason&&f.ampel_reason.includes('⭐'))?'<span class="star" title="Rohkost/kaltgepresst — besonders schonend verarbeitet">⭐</span>':''}${((f.nachhaltigkeit)||[]).includes('bio')?BIO_SIEGEL:''}</td>
+      <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}${(f.stern||(f.ampel_reason&&f.ampel_reason.includes('⭐')))?'<span class="star" title="Rohkost/kaltgepresst — besonders schonend verarbeitet">⭐</span>':''}${((f.nachhaltigkeit)||[]).includes('bio')?BIO_SIEGEL:''}</td>
       <td class="namecell">${nameHtml(f)}${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
       <td>${f.brand?esc(f.brand):'<span class="muted">—</span>'}</td>
       <td>${priceCell(f)}</td>
@@ -1424,7 +1458,19 @@ function markenBox(f){
   }
   return "";
 }
-function openDrawer(food){
+// Beim Öffnen die vollständige Zeile (mit den langen Texten) für genau dieses Lebensmittel holen.
+async function openDrawer(food){
+  if(food && !food.__voll){
+    $("#drawerTitle").textContent = food.name;
+    $("#drawerBody").innerHTML = '<div class="muted" style="padding:12px">Lade …</div>';
+    $("#scrim").classList.add("show"); $("#drawer").classList.add("show");
+    const {data,error} = await sb.from("foods").select(EDIT_COLS).eq("id",food.id).single();
+    if(error){ $("#drawerBody").innerHTML = '<div class="muted" style="padding:12px">Fehler beim Laden: '+esc(error.message)+'</div>'; return; }
+    Object.assign(food, data); food.__voll = true;
+  }
+  drawerZeigen(food);
+}
+function drawerZeigen(food){
   current = food || {__new:true,status:"draft",hay_groups:[],allergens:[],intolerances:[]};
   $("#drawerTitle").textContent = food ? food.name : "Neues Lebensmittel";
   $("#saveMsg").textContent=""; const f=current; drawerImageUrl = f.image_url || null;
