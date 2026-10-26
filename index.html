@@ -19,6 +19,7 @@
   input,select,textarea{font:inherit;color:var(--ink)}
   .hidden{display:none!important}
   .muted{color:var(--muted)}
+  .aka{color:var(--muted);font-size:12px;margin-top:2px}
 
   /* Farbige Zutaten-/Begründungs-Vorschau */
   .z-good{color:#2e8b45;font-weight:600}.z-bad{color:#c99000;font-weight:600}.z-warn{color:#c1272d;font-weight:600}.z-neu{color:#8a8276}.z-exp{color:var(--ink)}
@@ -237,7 +238,7 @@
   </div>
 
   <div class="controls">
-    <input type="search" id="search" placeholder="Suche nach Name…" />
+    <input type="search" id="search" placeholder="Suche nach Name oder Zweitname…" />
     <button class="btn filtertoggle" id="filterToggle" type="button">⚲ Filter <span class="fcount" id="filterCount" style="display:none"></span> ▾</button>
     <select id="fStatus">
       <option value="">Alle</option>
@@ -377,11 +378,11 @@ const FIELD_META = {
   allergens:   {label:"Allergene",            opts:ALLERGENS,  multi:true,  color:ALLERGEN_COLOR},
   intolerances:{label:"Unverträglichkeiten",  opts:INTOL,      multi:true,  color:INTOL_COLOR},
 };
-const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,ampel_reason,health_note,ganzheitlich_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition,image_url,nachhaltigkeit,brand,stores,price";
+const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,ampel_reason,health_note,ganzheitlich_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition,image_url,nachhaltigkeit,brand,stores,price,synonyms";
 // Schlanke Spalten für die Liste (Ricarda 03.10.2026: „lädt ultra lange“). Die langen Texte
 // (Ampel-Begründung, Gesundheit, Ganzheitlich, Trennkost, Nährwerte) kommen erst beim Öffnen
 // eines Lebensmittels — nur für dieses eine (siehe openDrawer). Spart rund zwei Drittel der Daten.
-const LIST_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,public_note,allergens,intolerances,ingredients,image_url,nachhaltigkeit,brand,stores,price";
+const LIST_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,public_note,allergens,intolerances,ingredients,image_url,nachhaltigkeit,brand,stores,price,synonyms";
 
 const STORES = ["Edeka","Rewe","Kaufland","Aldi","Lidl","Penny","Netto","dm","Rossmann","Müller","Budni","Bioladen","Alnatura","Denn's","Reformhaus","Online-Shop"];
 // Preis RELATIV zur Kategorie: günstig/teuer wird an ähnlichen Produkten gemessen
@@ -657,6 +658,12 @@ function nameHtml(f){
   if (i <= 0 || i >= name.length) return `<b>${esc(name)}</b>`;
   return `<span class="brandpfx">${esc(name.slice(0, i))}</span><b>${esc(name.slice(i))}</b>`;
 }
+// „Auch bekannt als: …“ — ruhige Zeile unter dem Namen, nur wenn Zweitnamen gepflegt sind.
+// Nur Anzeige; gepflegt wird das Feld über den Korrektur-Chat (Migration 0018).
+function auchBekanntAls(f){
+  const s=(f.synonyms||[]).filter(Boolean);
+  return s.length ? `<div class="aka">Auch bekannt als: ${esc(s.join(", "))}</div>` : "";
+}
 function nameSortRest(f){
       let k = f.name || "";
       const FUELL = /^[\s"„“”‚’»«›‹]*(?:AG|GmbH|KG|SE|Bio\+?|BIO\+?|bio|Demeter|Naturland|vegan|veggie)\b[\s,.+&-]*/;
@@ -690,7 +697,8 @@ function render(){
   const q=$("#search").value.trim().toLowerCase(), st=$("#fStatus").value, unrev=$("#fUnreviewed").checked;
   const durchsicht=($("#fDurchsicht")||{}).value||"";
   let list = FOODS.filter(f=>{
-    if(q && !f.name.toLowerCase().includes(q)) return false;
+    // Zweitnamen („Auch bekannt als“, Feld synonyms) zählen mit — „Schafskäse“ findet Feta (26.10.2026).
+    if(q && !f.name.toLowerCase().includes(q) && !(f.synonyms||[]).some(s=>(s||"").toLowerCase().includes(q))) return false;
     for(const flt of FILTERS){
       const chosen=SEL[flt.key];
       if(!chosen.size) continue;
@@ -758,7 +766,7 @@ function render(){
     tr.innerHTML = `
       <td class="cbcol"><input type="checkbox" class="rowcb" ${selected.has(f.id)?"checked":""}></td>
       <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}${(f.stern||(f.ampel_reason&&f.ampel_reason.includes('⭐')))?'<span class="star" title="Rohkost/kaltgepresst — besonders schonend verarbeitet">⭐</span>':''}${((f.nachhaltigkeit)||[]).includes('bio')?BIO_SIEGEL:''}</td>
-      <td class="namecell">${nameHtml(f)}${durchsicht==="pruefung"&&PRUEFUNG_OFFEN[f.id]?`<div class="muted" style="font-size:12px">geprüft: ${esc(PRUEFUNG_OFFEN[f.id])}</div>`:''}${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
+      <td class="namecell">${nameHtml(f)}${auchBekanntAls(f)}${durchsicht==="pruefung"&&PRUEFUNG_OFFEN[f.id]?`<div class="muted" style="font-size:12px">geprüft: ${esc(PRUEFUNG_OFFEN[f.id])}</div>`:''}${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
       <td>${f.brand?esc(f.brand):'<span class="muted">—</span>'}</td>
       <td>${priceCell(f)}</td>
       <td class="editable" data-field="category">${f.category?esc(f.category):'<span class="muted">—</span>'}</td>
@@ -1489,6 +1497,7 @@ function drawerZeigen(food){
   $("#drawerTitle").textContent = food ? food.name : "Neues Lebensmittel";
   $("#saveMsg").textContent=""; const f=current; drawerImageUrl = f.image_url || null;
   $("#drawerBody").innerHTML=`
+    ${food?auchBekanntAls(f):""}
     ${food?profileCard(f):""}
     ${food?markenBox(f):""}
     <div class="field"><label>Foto</label>
