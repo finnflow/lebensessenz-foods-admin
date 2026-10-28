@@ -20,5 +20,9 @@ window.LE_PRUEFUNG_OFFEN = {
  "fea5cf84-197a-4665-ae10-9a77ccd6ff78": "Costa (Farbe und Begründung, Besprechung 26.10.)",
  "2bd54e8c-0995-4997-883c-08aae51c98bc": "Costa (Farbe und Begründung, Besprechung 26.10.)",
  "9b9faf46-77f5-4505-88d0-5692b720505c": "Costa (Farbe und Begründung, Besprechung 26.10.)",
- "910dce4e-b575-4041-8d54-029aacb55a53": "Costa (Farbe und Begründung, Besprechung 26.10.); Sarah (Gesundheitshinweis, 23.10.)"
+ "910dce4e-b575-4041-8d54-029aacb55a53": "Costa (Farbe und Begründung, Besprechung 26.10.); Sarah (Gesundheitshinweis, 23.10.)",
+ "b5fa9ac6-ef47-4142-8c3e-9dce8db15777": "Costa (Farbe, Begründung und Gesundheitshinweis, Volltexte 27.10.)",
+ "8dd88d1c-4846-4b61-8a38-2386b2e04219": "Costa (Farbe, Begründung und Gesundheitshinweis, Volltexte 27.10.)",
+ "3eeb59fa-1cb3-4c7b-b799-f9b0ad164e9c": "Costa (Farbe, Begründung und Gesundheitshinweis, Volltexte 27.10.)",
+ "ad6ae97f-1d9e-4169-93d9-3b0c70a9152a": "Costa (Farbe, Begründung und Gesundheitshinweis, Volltexte 27.10.)"
 };
