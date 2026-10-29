@@ -267,6 +267,7 @@
       <div class="fgroup-h">🛒 Einkauf</div>
       <div class="fgroup-body">
         <div class="msel" data-key="category"></div>
+        <div class="msel" data-key="zubereitung"></div>
         <div class="msel" data-key="brand"></div>
         <div class="msel" data-key="stores"></div>
         <div class="msel" data-key="price"></div>
@@ -345,6 +346,7 @@
 <script src="./markenzuordnung.js"></script>
 <script src="./pruefung_offen.js"></script>
 <script src="./werkbank.js"></script>
+<script src="./zubereitung.js"></script>
 <script>
 const sb = supabase.createClient(window.LE_CONFIG.url, window.LE_CONFIG.key);
 
@@ -438,6 +440,10 @@ const FILTERS = [
   {key:"category",  label:"Kategorie",           opts:[...CATEGORIES,...CATEGORIES_ALT,BIO_FILTER], mode:"or",
    gruppen:[...KATEGORIE_GRUPPEN, ["Alte Kategorien (noch nicht umgehängt)", CATEGORIES_ALT], ["Weitere", [BIO_FILTER]]],
    field:f=>{const a=f.category?[f.category]:[]; if((f.nachhaltigkeit||[]).includes("bio")) a.push(BIO_FILTER); return a;}},
+  // Merkmal „Zubereitung“ für Gerichte (Ricarda 29.10.2026) — aus zubereitung.js, nur Anzeige/Filter.
+  {key:"zubereitung", label:"Zubereitung (Gerichte)", opts:["Fertigprodukt","selbst gemacht","tiefgekühlt","offen"], mode:"or",
+   labels:{"Fertigprodukt":"🏭 Fertigprodukt","selbst gemacht":"🍳 selbst gemacht","tiefgekühlt":"❄️ tiefgekühlt","offen":"– noch offen"},
+   field:f=>{const z=(window.LE_ZUBEREITUNG||{})[f.id]; return z?[z]:[];}},
   {key:"brand",     label:"Marke",               opts:[],         mode:"or",  field:f=>f.brand?[f.brand]:[]},
   {key:"freivon",   label:"Frei von", opts:["glutenfrei","Laktose","Soja","Nüsse/Erdnuss","Ei","Sesam","Fisch","Sellerie","Senf","Sulfite","Lupine","Krebstiere","Weichtiere","Fructose","Histamin","Sorbit"],
    labels:{"glutenfrei":"🌾 glutenfrei","Laktose":"🥛 laktosefrei","Soja":"🌱 sojafrei","Nüsse/Erdnuss":"🥜 nussfrei","Ei":"🥚 eifrei","Sesam":"sesamfrei","Fisch":"🐟 fischfrei","Sellerie":"🥬 selleriefrei","Senf":"🍯 senffrei","Sulfite":"sulfitfrei","Lupine":"lupinenfrei","Krebstiere":"krebstierfrei","Weichtiere":"weichtierfrei","Fructose":"🍏 fructosearm","Histamin":"histaminarm","Sorbit":"sorbitarm"},
@@ -469,7 +475,7 @@ const FILTERS = [
   {key:"ampel",     label:"Ampel",  opts:["GRUEN","GELB","ROT","GRAU"],  mode:"or",
    labels:{GRUEN:"🟢 Grün",GELB:"🟡 Gelb",ROT:"🔴 Rot",GRAU:"⚪ Grau (Rückfrage)"}, field:f=>f.ampel?[f.ampel]:[]},
 ];
-const SEL = {category:new Set(),freivon:new Set(),brand:new Set(),vegan:new Set(),haykonform:new Set(),hay:new Set(),allerg_intol:new Set(),stores:new Set(),price:new Set(),ampel:new Set()};
+const SEL = {category:new Set(),zubereitung:new Set(),freivon:new Set(),brand:new Set(),vegan:new Set(),haykonform:new Set(),hay:new Set(),allerg_intol:new Set(),stores:new Set(),price:new Set(),ampel:new Set()};
 
 function buildFilters(){
   for(const flt of FILTERS){
@@ -787,7 +793,7 @@ function render(){
     tr.innerHTML = `
       <td class="cbcol"><input type="checkbox" class="rowcb" ${selected.has(f.id)?"checked":""}></td>
       <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}${(f.stern||(f.ampel_reason&&f.ampel_reason.includes('⭐')))?'<span class="star" title="Rohkost/kaltgepresst — besonders schonend verarbeitet">⭐</span>':''}${((f.nachhaltigkeit)||[]).includes('bio')?BIO_SIEGEL:''}</td>
-      <td class="namecell">${nameHtml(f)}${auchBekanntAls(f)}${VIEW==="werkbank"&&WERKBANK[f.id]?`<div class="muted" style="font-size:12px">fehlt: ${esc(WERKBANK[f.id])}</div>`:''}${durchsicht==="pruefung"&&PRUEFUNG_OFFEN[f.id]?`<div class="muted" style="font-size:12px">geprüft: ${esc(PRUEFUNG_OFFEN[f.id])}</div>`:''}${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
+      <td class="namecell">${nameHtml(f)}${auchBekanntAls(f)}${(window.LE_ZUBEREITUNG||{})[f.id]?`<div class="muted" style="font-size:12px">Zubereitung: ${esc(window.LE_ZUBEREITUNG[f.id])}</div>`:''}${VIEW==="werkbank"&&WERKBANK[f.id]?`<div class="muted" style="font-size:12px">fehlt: ${esc(WERKBANK[f.id])}</div>`:''}${durchsicht==="pruefung"&&PRUEFUNG_OFFEN[f.id]?`<div class="muted" style="font-size:12px">geprüft: ${esc(PRUEFUNG_OFFEN[f.id])}</div>`:''}${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
       <td>${f.brand?esc(f.brand):'<span class="muted">—</span>'}</td>
       <td>${priceCell(f)}</td>
       <td class="editable" data-field="category">${f.category?esc(f.category):'<span class="muted">—</span>'}</td>
