@@ -84,6 +84,8 @@
   .achip-reset{border:0;background:none;color:var(--muted);font-size:12.5px;cursor:pointer;text-decoration:underline;margin-left:2px}
   .filterpanel{display:none;margin:2px 20px 10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
   .filterpanel.open{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}
+  .msel-gh{font-weight:700;font-size:12.5px;color:var(--ink,#222);margin:10px 4px 3px;padding-top:6px;border-top:1px solid var(--line)}
+  .msel-gh:first-child{border-top:0;margin-top:2px;padding-top:0}
   .fgroup-h{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:9px}
   .fgroup-body{display:flex;flex-direction:column;gap:7px}
   .fgroup-body .msel{display:block}
@@ -350,6 +352,22 @@ const sb = supabase.createClient(window.LE_CONFIG.url, window.LE_CONFIG.key);
 // solange einzelne Einträge sie tragen (Zweifelsfälle, Korrektur-Chat hängt sie nach).
 const CATEGORIES = ["Obst", "Gemüse & Salat", "Hülsenfrüchte", "Nüsse, Samen & Trockenfrüchte", "Getreide, Flocken & Mehle", "Reis, Nudeln & Kartoffeln", "Brot & Backwaren", "Müsli & Cerealien", "Backzutaten", "Backmischungen", "Süßungsmittel", "Fette & Öle", "Gewürze, Kräuter & Salz", "Saucen, Pasten & Würzmittel", "Brotaufstriche, süß & herzhaft", "Nussmus & Tahin", "Milch, Joghurt, Quark & Eier", "Käse", "Fleisch & Geflügel", "Wurst & Aufschnitt", "Fisch & Meeresfrüchte", "Pflanzendrinks, Joghurts, Käse & Sahne (pflanzlich)", "Tofu, Tempeh & Bratlinge (pflanzlich)", "Suppen & Eintöpfe", "Pizza, Pinsa & Flammkuchen", "Nudel-, Reis- & Kartoffelgerichte", "Gemüsegerichte & Bowls", "Fleischgerichte", "Fisch- & Meeresfrüchtegerichte", "Salate & Feinkost", "Schokolade & Pralinen", "Riegel", "Kekse, Kuchen & Gebäck", "Bonbons, Fruchtgummi & Lakritz", "Eis & Desserts", "Chips & Knabbereien", "Wasser & Limonaden", "Säfte & Smoothies", "Energydrinks & Sportgetränke", "Bier, Wein & Spirituosen", "Tee & Kräutertee", "Kaffee & Kakao", "Babynahrung", "Nahrungsergänzung & Proteinpulver"];
 const CATEGORIES_ALT = ["Brotaufstriche", "Cerealien & Müsli", "Eier", "Fertigprodukt / Convenience", "Fette / Öle", "Fisch / Meeresfrüchte", "Fleisch / Wurst", "Gemüse / Salat", "Getreide & Mehle", "Getreide / Backwaren", "Getränke", "Gewürze & Kräuter", "Hülsenfrüchte / Soja", "Kartoffeln / Reis / Pasta", "Milchprodukte", "Nüsse / Samen", "Salzige Snacks", "Saucen / Würzen", "Süßes / Snacks", "Süßigkeiten & Naschereien", "Tee & Kaffee", "Vegane Alternativen"];
+// Die sieben Gruppen als Überschriften (Layout Costa/Sarah 29.10.2026,
+// pruefberichte/sarah/2026-10-29_KATEGORIEN_LAYOUT_FUER_KORREKTUR_CHAT.md) — fett, darunter die anklickbaren Kategorien.
+const KATEGORIE_GRUPPEN = [
+  ["Frisches & Grundzutaten", ["Obst","Gemüse & Salat","Hülsenfrüchte","Nüsse, Samen & Trockenfrüchte","Getreide, Flocken & Mehle","Reis, Nudeln & Kartoffeln","Brot & Backwaren","Müsli & Cerealien","Backzutaten","Backmischungen","Süßungsmittel","Fette & Öle","Gewürze, Kräuter & Salz","Saucen, Pasten & Würzmittel","Brotaufstriche, süß & herzhaft","Nussmus & Tahin"]],
+  ["Tierische Produkte", ["Milch, Joghurt, Quark & Eier","Käse","Fleisch & Geflügel","Wurst & Aufschnitt","Fisch & Meeresfrüchte"]],
+  ["Pflanzliche Produkte", ["Pflanzendrinks, Joghurts, Käse & Sahne (pflanzlich)","Tofu, Tempeh & Bratlinge (pflanzlich)"]],
+  ["Gerichte", ["Suppen & Eintöpfe","Pizza, Pinsa & Flammkuchen","Nudel-, Reis- & Kartoffelgerichte","Gemüsegerichte & Bowls","Fleischgerichte","Fisch- & Meeresfrüchtegerichte","Salate & Feinkost"]],
+  ["Süßes & Snacks", ["Schokolade & Pralinen","Riegel","Kekse, Kuchen & Gebäck","Bonbons, Fruchtgummi & Lakritz","Eis & Desserts","Chips & Knabbereien"]],
+  ["Getränke", ["Wasser & Limonaden","Säfte & Smoothies","Energydrinks & Sportgetränke","Bier, Wein & Spirituosen","Tee & Kräutertee","Kaffee & Kakao"]],
+  ["Besondere Zielgruppen", ["Babynahrung","Nahrungsergänzung & Proteinpulver"]],
+];
+// Auswahlliste mit fetten Gruppen-Überschriften (<optgroup>); ein alter Name erscheint nur, wenn der Eintrag ihn noch trägt.
+function kategorieOptionen(aktuell){
+  const alt = aktuell && !CATEGORIES.includes(aktuell) ? `<optgroup label="Alte Kategorie (noch umhängen)"><option selected>${esc(aktuell)}</option></optgroup>` : "";
+  return alt + KATEGORIE_GRUPPEN.map(([g,cs])=>`<optgroup label="${esc(g)}">`+cs.map(c=>`<option ${aktuell===c?'selected':''}>${esc(c)}</option>`).join("")+`</optgroup>`).join("");
+}
 const HAY = ["stärkearmes Gemüse/neutral","Obst","Kohlenhydrat-Quelle","Protein-Quelle","Fett-Quelle","Hülsenfrüchte","unklar"];
 const VEGAN = ["vegan","vegetarisch","tierisch"];
 const ALLERGENS = ["Glutenhaltiges Getreide","Weizen","Roggen","Gerste","Hafer","Milch","Laktose","Ei","Soja",
@@ -418,6 +436,7 @@ function priceCell(f){
 // mode "and" = Lebensmittel hat ALLE gewählten Werte (Hay/Allergene/Unverträglichkeiten — Mehrwert)
 const FILTERS = [
   {key:"category",  label:"Kategorie",           opts:[...CATEGORIES,...CATEGORIES_ALT,BIO_FILTER], mode:"or",
+   gruppen:[...KATEGORIE_GRUPPEN, ["Alte Kategorien (noch nicht umgehängt)", CATEGORIES_ALT], ["Weitere", [BIO_FILTER]]],
    field:f=>{const a=f.category?[f.category]:[]; if((f.nachhaltigkeit||[]).includes("bio")) a.push(BIO_FILTER); return a;}},
   {key:"brand",     label:"Marke",               opts:[],         mode:"or",  field:f=>f.brand?[f.brand]:[]},
   {key:"freivon",   label:"Frei von", opts:["glutenfrei","Laktose","Soja","Nüsse/Erdnuss","Ei","Sesam","Fisch","Sellerie","Senf","Sulfite","Lupine","Krebstiere","Weichtiere","Fructose","Histamin","Sorbit"],
@@ -457,8 +476,9 @@ function buildFilters(){
     const host=document.querySelector(`.msel[data-key="${flt.key}"]`);
     const opts = (flt.key==='brand') ? [...new Set(FOODS.map(f=>f.brand).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'de')) : flt.opts;
     host.innerHTML = `<button type="button" class="msel-btn"></button><div class="msel-pop">`+
-      opts.map(o=>{const v=o, lab=(flt.labels&&flt.labels[v])||v;
-        return `<label><input type="checkbox" value="${esc(v)}">${esc(lab)}</label>`;}).join("")+
+      (flt.gruppen ? flt.gruppen.map(([g,cs])=>`<div class="msel-gh">${esc(g)}</div>`+cs.map(v=>`<label><input type="checkbox" value="${esc(v)}">${esc((flt.labels&&flt.labels[v])||v)}</label>`).join("")).join("")
+       : opts.map(o=>{const v=o, lab=(flt.labels&&flt.labels[v])||v;
+        return `<label><input type="checkbox" value="${esc(v)}">${esc(lab)}</label>`;}).join(""))+
       `<div class="msel-foot"><button type="button" class="msel-clear">zurücksetzen</button></div></div>`;
     const btn=host.querySelector(".msel-btn"), popp=host.querySelector(".msel-pop");
     updateMselBtn(flt,btn);
@@ -940,7 +960,7 @@ function openCellEditor(food,field,cell){
   if(field==="ampel") return openAmpelEditor(food,cell);
   const meta=FIELD_META[field]; let html=`<div class="pop-head">${meta.label}</div>`;
   if(!meta.multi){
-    html+=`<select id="popsel"><option value="">— keine —</option>`+meta.opts.map(o=>`<option ${food[field]===o?'selected':''}>${esc(o)}</option>`).join("")+`</select>`;
+    html+=`<select id="popsel"><option value="">— keine —</option>`+(field==="category" ? kategorieOptionen(food[field]) : meta.opts.map(o=>`<option ${food[field]===o?'selected':''}>${esc(o)}</option>`).join(""))+`</select>`;
   }else{
     const sel=food[field]||[];
     html+=`<div class="pop-chips">`+meta.opts.map(o=>`<label class="chip c-${meta.color[o]||'gray'} ${sel.includes(o)?'on':''}"><input type="checkbox" value="${esc(o)}" ${sel.includes(o)?'checked':''}>${esc(hayLbl(o))}</label>`).join("")+`</div>`;
@@ -1516,7 +1536,7 @@ function drawerZeigen(food){
     <div class="field"><label>Marke <small style="color:var(--muted);font-weight:400">(z. B. Alnatura, dmBio — leer lassen, wenn markenlos)</small></label><input type="text" id="e_brand" value="${esc(f.brand||"")}"></div>
     <div class="field"><label>Erhältlich bei <small style="color:var(--muted);font-weight:400">(mehrere möglich)</small></label>${drawerChips("stores",STORES,f.stores)}</div>
     <div class="field"><label>Preis <small style="color:var(--muted);font-weight:400">(€, z. B. 1.99 — wie im Shop; bestimmt die €/€€/€€€-Einstufung)</small></label><input type="number" step="0.01" min="0" id="e_price" value="${f.price!=null&&f.price!==''?esc(f.price):''}"></div>
-    <div class="field"><label>Kategorie</label><select id="e_category"><option value="">— wählen —</option>${(f.category&&!CATEGORIES.includes(f.category)?[f.category]:[]).concat(CATEGORIES).map(c=>`<option ${f.category===c?'selected':''}>${esc(c)}${CATEGORIES.includes(c)?'':' (alt)'}</option>`).join("")}</select></div>
+    <div class="field"><label>Kategorie</label><select id="e_category"><option value="">— wählen —</option>${kategorieOptionen(f.category)}</select></div>
     <div class="field"><label>Vegan / vegetarisch / tierisch</label><select id="e_vegan"><option value="">— wählen —</option>${VEGAN.map(v=>`<option ${f.vegan===v?'selected':''}>${esc(v)}</option>`).join("")}</select></div>
     <div class="field"><label>Ampel</label><div class="ampel-row" id="e_ampel">${AMPEL.map(([v,l])=>`<button type="button" data-v="${v}" class="${f.ampel===v?'sel':''}">${l}</button>`).join("")}</div></div>
     <details class="field" open><summary>Ampel-Begründung</summary><div class="prevlabel">Vorschau (Zutat farbig, Erklärung schwarz)</div><div class="rsn-prev" id="prev_reason"></div><textarea id="e_ampel_reason">${esc(f.ampel_reason||"")}</textarea></details>
