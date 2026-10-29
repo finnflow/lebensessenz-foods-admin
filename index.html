@@ -1291,6 +1291,14 @@ function renderZutatenColored(text, salt, isBio, sugar, fat){
   }
   return out+esc(plainPart);
 }
+// Inline-Schreibweise der Texte anzeigen (Costa/Sarah 29.10.: die Oberfläche zeigte <u>…</u>
+// als rohen Text und *kursiv* mit Sternchen). Erwartet bereits escapten Text.
+function fmtInline(h){
+  return h.replace(/&lt;u&gt;(.+?)&lt;\/u&gt;/g,'<u>$1</u>')
+          .replace(/__([^_]+)__/g,'<u>$1</u>')
+          .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
+          .replace(/(^|[^*\w])\*([^*\s](?:[^*]*[^*\s])?)\*(?![*\w])/g,'$1<i>$2</i>');
+}
 function renderReasonColored(text){
   if(!text||!text.trim()) return "";
   let cur='z-neu'; const out=[];
@@ -1314,7 +1322,8 @@ function renderReasonColored(text){
     if(!content){ out.push(`<div>${esc(lead)}</div>`); continue; }
     const ci=content.indexOf(':');
     // **Text** in der Erklärung fett hervorheben (z. B. "kaltgepresst/unerhitzt" bei ⭐-Zutaten)
-    const boldExp = s2=>esc(s2).replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
+    // Schreibweise seit 07.10./29.10.: **fett** (Stoff + Wirkung), *kursiv* (Lebensmittel), <u>…</u>
+    const boldExp = s2=>fmtInline(esc(s2));
     const inner = ci>0
       ? `<span class="${cur}">${boldExp(content.slice(0,ci))}</span><span class="z-exp">${boldExp(content.slice(ci))}</span>`
       : `<span class="${cur}">${boldExp(content)}</span>`;
@@ -1353,16 +1362,19 @@ function renderNoteBold(text){
     // Eine Zeile ist Überschrift, wenn sie kein Stichpunkt ist UND entweder ausdrücklich
     // in **…** steht (Struktur-Marker, DB-weit gesetzt 2026-07-27) oder kurz genug ist
     // (Alt-Texte, die noch nicht umgestellt sind). Ein langer Satz ohne • bleibt Absatz.
-    const isHeading = !isBullet && (/\*\*.+\*\*/.test(core) || core.length<=44);
+    const isHeading = !isBullet && (/\*\*.+\*\*/.test(core) || /^<u>.*<\/u>$/.test(core) || core.length<=44);
     if(isHeading){
       // ★ Überschriften: NORMAL geschrieben und UNTERSTRICHEN, nicht fett (Ricarda
       // 2026-07-29 — ersetzt die Fett-Regel vom 27.07.; gilt einheitlich in jedem Feld,
       // Trennkost/Hinweise/Nährwerte unterstreichen ohnehin schon). Die **…**-Marker
       // bleiben in der DB als Struktur-Kennzeichen und werden hier nur entfernt.
-      const kopf = esc(t).replace(/\*\*([^*]+)\*\*/g,'$1').replace(/__([^_]+)__/g,'$1');
+      const kopf = esc(t).replace(/&lt;\/?u&gt;/g,'').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/__([^_]+)__/g,'$1');
       return '<div style="text-decoration:underline'+(i?';margin-top:9px':'')+'">'+kopf+'</div>';
     }
-    let html = esc(t).replace(/__([^_]+)__/g,'<u>$1</u>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
+    // Texte mit eigenem Fettdruck (Schreibweise seit 06.10.) bekommen KEIN automatisches
+    // Zusatz-Fett — sonst würde die Schlagwort-Liste unten in die gesetzten Gruppen hineinfetten.
+    const eigenesFett = /\*\*[^*]+\*\*/.test(text);
+    let html = fmtInline(esc(t));
     // „je …, desto …" ist EINE Sinneinheit → als Ganzes fetten, nie mittendrin zerhacken
     // (Ricarda 2026-07-24); läuft VOR der Schlagwort-Regex, damit die nicht hineinfettet.
     let jeParts=[];
@@ -1374,7 +1386,7 @@ function renderNoteBold(text){
     html = html.replace(/\bbio\s+(?:wie|und)\s+konventionell\w*(?:\s+gleichermaßen)?/gi,
       (m)=>{ jeParts.push('<b>'+m+'</b>'); return '\u241fJD'+(jeParts.length-1)+'\u241f'; });
     // Stichpunkt ODER langer Fließtext: nur Schlüsselbegriffe fett, Zeile bleibt normal
-    html = html.replace(NOTE_HL,(_m,pre,qual,kw)=>pre+'<b>'+(qual||'')+kw+'</b>');
+    if(!eigenesFett) html = html.replace(NOTE_HL,(_m,pre,qual,kw)=>pre+'<b>'+(qual||'')+kw+'</b>');
     html = html.replace(/\u241fJD(\d+)\u241f/g,(_m,i)=>jeParts[+i]);
     return '<div>'+html+'</div>';
   }).join("");
