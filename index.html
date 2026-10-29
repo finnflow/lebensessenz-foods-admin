@@ -229,6 +229,7 @@
     <button type="button" data-view="" role="tab">Alle Lebensmittel <small id="vcAll"></small></button>
     <button type="button" data-view="grund" role="tab">Grundlebensmittel-DB <small id="vcGrund"></small></button>
     <button type="button" data-view="erweitert" role="tab">Erweiterte LM-DB <small id="vcErw"></small></button>
+    <button type="button" data-view="werkbank" role="tab" title="Produkte, bei denen noch etwas fehlt (Ricarda 26.10.2026)">Werkbank <small id="vcWerk"></small></button>
   </div>
   <div class="viewstats hidden" id="viewStats">
     <span><b id="vsTotal"></b> Lebensmittel</span>
@@ -341,6 +342,7 @@
 <script src="./grundlebensmittel.js"></script>
 <script src="./markenzuordnung.js"></script>
 <script src="./pruefung_offen.js"></script>
+<script src="./werkbank.js"></script>
 <script>
 const sb = supabase.createClient(window.LE_CONFIG.url, window.LE_CONFIG.key);
 
@@ -766,7 +768,7 @@ function render(){
     tr.innerHTML = `
       <td class="cbcol"><input type="checkbox" class="rowcb" ${selected.has(f.id)?"checked":""}></td>
       <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}${(f.stern||(f.ampel_reason&&f.ampel_reason.includes('⭐')))?'<span class="star" title="Rohkost/kaltgepresst — besonders schonend verarbeitet">⭐</span>':''}${((f.nachhaltigkeit)||[]).includes('bio')?BIO_SIEGEL:''}</td>
-      <td class="namecell">${nameHtml(f)}${auchBekanntAls(f)}${durchsicht==="pruefung"&&PRUEFUNG_OFFEN[f.id]?`<div class="muted" style="font-size:12px">geprüft: ${esc(PRUEFUNG_OFFEN[f.id])}</div>`:''}${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
+      <td class="namecell">${nameHtml(f)}${auchBekanntAls(f)}${VIEW==="werkbank"&&WERKBANK[f.id]?`<div class="muted" style="font-size:12px">fehlt: ${esc(WERKBANK[f.id])}</div>`:''}${durchsicht==="pruefung"&&PRUEFUNG_OFFEN[f.id]?`<div class="muted" style="font-size:12px">geprüft: ${esc(PRUEFUNG_OFFEN[f.id])}</div>`:''}${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
       <td>${f.brand?esc(f.brand):'<span class="muted">—</span>'}</td>
       <td>${priceCell(f)}</td>
       <td class="editable" data-field="category">${f.category?esc(f.category):'<span class="muted">—</span>'}</td>
@@ -802,9 +804,12 @@ let VIEW = ""; try { VIEW = localStorage.getItem("le_view") || ""; } catch(e) {}
 const GRUND_EXTRA = new Set(window.LE_GRUND_EXTRA || []);
 const GRUND_SOURCES = new Set(window.LE_GRUND_SOURCES || ["ontology"]);   // seit G148 (25.09.) auch notion_v3
 function isGrund(f){ return GRUND_SOURCES.has(f.source) || GRUND_EXTRA.has(f.id); }
+// Werkbank (Ricarda 2026-10-26): Produkte, bei denen noch etwas fehlt — IDs aus werkbank.js, nur Ansicht.
+const WERKBANK = window.LE_WERKBANK || {};
 function inView(f, v){
   if(!v) return true;
   if(f.status === "archived") return false;
+  if(v === "werkbank") return Object.prototype.hasOwnProperty.call(WERKBANK, f.id);
   return v === "grund" ? isGrund(f) : !isGrund(f);
 }
 function viewCounts(v){
@@ -817,11 +822,12 @@ function renderViewSwitch(){
   $("#vcAll").textContent = de(FOODS.length);
   $("#vcGrund").textContent = `${de(g.total)} · ${de(g.open)} offen`;
   $("#vcErw").textContent = `${de(e.total)} · ${de(e.open)} offen`;
+  const vw = $("#vcWerk"); if(vw) vw.textContent = de(viewCounts("werkbank").total);
   document.querySelectorAll("#viewSwitch button").forEach(b => {
     const on = b.dataset.view === VIEW; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on));
   });
   $("#viewStats").classList.toggle("hidden", !VIEW);
-  if(VIEW){ const c = VIEW === "grund" ? g : e;
+  if(VIEW){ const c = VIEW === "grund" ? g : VIEW === "werkbank" ? viewCounts("werkbank") : e;
     $("#vsTotal").textContent = de(c.total); $("#vsOk").textContent = de(c.ok); $("#vsOpen").textContent = de(c.open); }
 }
 document.querySelectorAll("#viewSwitch button").forEach(b => b.onclick = () => {
