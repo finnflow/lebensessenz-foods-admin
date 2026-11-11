@@ -29,5 +29,6 @@ window.LE_WERKBANK = {
  "c02eb5da-f41d-447a-a68e-99bc2d496e1e": "Zutatenliste (keine seriöse Quelle mit wörtlicher Liste gefunden) (seit 2026-10-27)",
  "d4bd5497-6396-4d5b-9fa6-c177eaccffd0": "Zutatenliste (Sorte nicht sicher dieselbe) (seit 2026-10-27)",
  "d6f25d29-3d30-4658-8021-9c38cdd60b15": "Zutatenliste (keine seriöse Quelle mit wörtlicher Liste gefunden) (seit 2026-10-27)",
- "f88a3370-7ee1-4cbb-a4d9-98540a808495": "Zutatenliste (keine seriöse Quelle mit wörtlicher Liste gefunden) (seit 2026-10-27)"
+ "f88a3370-7ee1-4cbb-a4d9-98540a808495": "Zutatenliste (keine seriöse Quelle mit wörtlicher Liste gefunden) (seit 2026-10-27)",
+ "f1b90354-fa2b-4db2-af44-1057e1962e93": "Zutatenliste (keine seriöse Quelle mit wörtlicher Liste gefunden); liegt noch im Papierkorb, Rückholung durch Korrektur-Chat (seit 2026-11-05)"
 };
