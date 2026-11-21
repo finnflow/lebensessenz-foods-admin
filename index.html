@@ -735,7 +735,8 @@ function render(){
       else { const vals=flt.field(f); ok = flt.mode==="or" ? [...chosen].some(c=>vals.includes(c)) : [...chosen].every(c=>vals.includes(c)); }
       if(!ok) return false;
     }
-    if(!inView(f, VIEW)) return false;
+    // Papierkorb-Filter zeigt den ganzen Papierkorb, egal welche Ansicht oben gewählt ist (Ricarda 21.11.2026).
+    if(st!=="archived" && !inView(f, VIEW)) return false;
     if(st && f.status!==st) return false;
     if(unrev && f.reviewed_by_ricarda) return false;
     // ★ Durchsicht-Listen (Ricarda 2026-08-05): dieselben Erkennungen wie im Generator,
