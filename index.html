@@ -772,7 +772,11 @@ function render(){
     }
     return true;
   });
+  // Papierkorb (Ricarda 21.11.2026): zuletzt hineingelegte zuerst, solange nicht nach einer Spalte sortiert wird.
+  const pkDatum = f => ((f.public_note||"").match(/Papierkorb seit (\d{4}-\d{2}-\d{2})/)||[])[1] || "";
+  const pkSort = st==="archived" && sortField==="name" && sortDir==="asc";
   list.sort((a,b)=>{
+    if(pkSort){ const d=pkDatum(b).localeCompare(pkDatum(a)); if(d) return d; }
     const ka=sortKey(a),kb=sortKey(b);
     // 17.08.: deutsches Alphabet statt Zeichencode — sonst sortieren Ș, é, „ außerhalb
     let c = (typeof ka==='string' && typeof kb==='string')
@@ -785,7 +789,12 @@ function render(){
   const poOpt = document.querySelector('#fDurchsicht option[value="pruefung"]');
   if(poOpt) poOpt.textContent = `Prüfung offen – bereit für den Haken (${FOODS.filter(pruefungBereit).length})`;
   const _basis = VIEW ? viewCounts(VIEW).total : FOODS.length;
-  $("#count").textContent = `${list.length} von ${_basis} Lebensmitteln`;
+  if(st==="archived"){
+    const heute=new Date().toISOString().slice(0,10), neu=list.filter(f=>pkDatum(f)===heute).length;
+    $("#count").textContent = `${list.length} im Papierkorb` + (neu?` · ${neu} davon seit heute`:"") + (pkSort?" · zuletzt hineingelegte zuerst":"");
+  } else {
+    $("#count").textContent = `${list.length} von ${_basis} Lebensmitteln`;
+  }
   renderViewSwitch();
   const tb=$("#rows"); tb.innerHTML="";
   list.forEach((f,idx)=>{
