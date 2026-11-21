@@ -302,6 +302,7 @@
     <button class="btn ghost" id="deselectBtn">Abwählen</button>
     <button class="btn" id="confirmBtn">✓ Ausgewählte bestätigen</button>
     <button class="btn danger" id="deleteBtn">🗑 In den Papierkorb</button>
+    <button class="btn danger" id="purgeBtn" hidden title="Nur für Einträge im Papierkorb — nicht umkehrbar">⛔ Endgültig löschen</button>
   </div>
 
   <div class="hint-bar">💡 Zelle anklicken zum Ändern (Kategorie · Vegan · Trennkost-Gruppe · Ampel · Allergene · Unverträglichkeiten). „Geprüft" anklicken = Freigabe mit Notiz (wird im Freigabe-Register festgehalten; Speichern bestätigt nichts). Name anklicken = alle Details. Spalten-Überschrift anklicken = sortieren. Box links = auswählen (mit ⇧ mehrere; dann oben „✓ bestätigen").</div>
@@ -813,6 +814,11 @@ function render(){
   const sa=$("#selAll"); sa.checked=allSel; sa.indeterminate=someSel&&!allSel;
   $("#bulkbar").classList.toggle("show",selected.size>0);
   $("#bulkCount").textContent=`${selected.size} ausgewählt`;
+  // Papierkorb (Ricarda 21.11.2026): „Endgültig löschen" nur für ausgewählte Einträge im Papierkorb,
+  // „In den Papierkorb" nur für Einträge, die noch nicht drin sind.
+  { const selRows=FOODS.filter(f=>selected.has(f.id));
+    $("#purgeBtn").hidden = !selRows.some(f=>f.status==="archived");
+    $("#deleteBtn").hidden = !selRows.some(f=>f.status!=="archived"); }
   document.querySelectorAll("th.sortable").forEach(th=>{
     const active = th.dataset.sort===sortField, arr=th.querySelector(".arr");
     arr.textContent = active ? (sortDir==="asc"?" ▲":" ▼") : " ⇅";
@@ -946,6 +952,29 @@ $("#deleteBtn").onclick=async()=>{
     const i=FOODS.findIndex(x=>x.id===f.id); if(i>=0) FOODS[i]=res.data;
   }
   selected.clear(); lastIdx=null; render();
+};
+
+// Endgültig löschen (Ricarda 21.11.2026: „dass der Papierkorb für mich aufrufbar wird, sodass ich händisch löschen kann“).
+// Geht NUR für Einträge im Papierkorb (status „archived“), einzeln bestätigt, nicht umkehrbar. Die Datenbank lässt das
+// nur zu, wenn das angemeldete Konto dafür freigeschaltet ist (api-Migration 0020_papierkorb_endgueltig_loeschen.sql,
+// Liste papierkorb_berechtigte — spielt Finn ein). Ohne Freigabe kommt eine klare Meldung, gelöscht wird dann nichts.
+$("#purgeBtn").onclick=async()=>{
+  const rows=FOODS.filter(f=>selected.has(f.id) && f.status==="archived"); if(!rows.length) return;
+  const names=rows.map(f=>"• "+f.name).slice(0,15).join("\n");
+  if(!confirm(`${rows.length} Einträge aus dem Papierkorb ENDGÜLTIG löschen?\n\n${names}${rows.length>15?"\n…":""}\n\nDas lässt sich nicht rückgängig machen.`)) return;
+  let ok=0;
+  for(const f of rows){
+    const res=await sb.from("foods").delete().eq("id",f.id).eq("status","archived").select("id");
+    if(res.error || !res.data || !res.data.length){
+      const warum = res.error ? res.error.message : "keine Berechtigung";
+      alert(`„${f.name}“ wurde nicht gelöscht (${warum}).\n\nEndgültig löschen ist für dein Konto noch nicht freigeschaltet — Finn muss die Freigabe in der Datenbank einspielen. Bis dahin bleibt der Eintrag im Papierkorb (für Kund:innen unsichtbar).`);
+      break;
+    }
+    const i=FOODS.findIndex(x=>x.id===f.id); if(i>=0) FOODS.splice(i,1);
+    selected.delete(f.id); ok++;
+  }
+  if(ok) alert(`${ok} ${ok===1?"Eintrag":"Einträge"} endgültig gelöscht.`);
+  lastIdx=null; render();
 };
 
 // ── Sortieren ──
