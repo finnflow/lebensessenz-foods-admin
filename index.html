@@ -1362,7 +1362,7 @@ function renderZutatenColored(text, salt, isBio, sugar, fat){
 function fmtInline(h){
   return h.replace(/&lt;u&gt;(.+?)&lt;\/u&gt;/g,'<u>$1</u>')
           .replace(/__([^_]+)__/g,'<u>$1</u>')
-          .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
+          .replace(/\*\*((?:[^*]|\*(?!\*))+?)\*\*/g,'<b>$1</b>')   // fett darf *kursiv* enthalten
           .replace(/(^|[^*\w])\*([^*\s](?:[^*]*[^*\s])?)\*(?![*\w])/g,'$1<i>$2</i>');
 }
 function renderReasonColored(text){
@@ -1495,7 +1495,7 @@ function renderHinweise(text){
 const TK_HL=new RegExp('('+[
  // Achtung: hinter „ß"/Umlauten funktioniert \b im Browser nicht (ASCII-Wortgrenze) —
  // deshalb dort KEIN schließendes \b, sondern offene Endung.
- 'Stärke/Kohlenhydraten?','Eiweiß/Protein','Kohlenhydrat-Quellen','Fett-Quelle',
+ 'Stärke/Kohlenhydraten?','Eiweiß/Protein','Kohlenhydrat-Quellen','Fett-Quellen?',
  'stärkearme[mn]? Gemüse/Salat','neutralem Gemüse','Hülsenfrüchte',
  'eiweißreich\\w*','kohlenhydratreich\\w*',
  '\\bStärke(?![a-z])','\\bEiweiß','\\bProtein\\b','\\bObst\\b','\\bFett\\b',
@@ -1506,12 +1506,16 @@ function renderTrennkostBold(text){
   return text.split('\n').map(raw=>{
     if(!raw.trim()) return '<div style="height:6px"></div>';
     let h=esc(raw).replace(/(nicht konform|bedingt konform|konform)/i,'<b>$1</b>');
+    const eigeneAuszeichnung=/\*[^*\s]|<u>|__[^_]+__/.test(raw);
     if(raw.trim().charAt(0)==='•'){
       h=h.replace(/(→\s*)(.+)$/,'$1<b>$2</b>');
       h=h.replace(/^(•\s*)([A-ZÄÖÜ][A-Za-zÄÖÜäöüß -]{1,38}?(?:-Quellen?|quellen?|Hülsenfrüchte|Obst)):/,'$1<u>$2</u>:');
-      // Hinweis-Stichpunkte: handlungsrelevante Sinneinheiten fetten (Ricarda 2026-07-24)
-      h=h.replace(TK_HL,'<b>$1</b>');
+      // Hinweis-Stichpunkte: handlungsrelevante Sinneinheiten fetten (Ricarda 2026-07-24) —
+      // aber nur, wenn der Text nicht selbst schon fett/kursiv/unterstrichen auszeichnet
+      // (Ricarda 23.11.2026: Sternchen standen roh im Trennkost-Hinweis, z. B. bei Acai).
+      if(!eigeneAuszeichnung) h=h.replace(TK_HL,'<b>$1</b>');
     }
+    h=fmtInline(h);
     // „Bausteine:"/„Hinweis:" = Mini-Überschriften → unterstrichen (Befund AA)
     if(/^(Bausteine|Hinweis(e)?):?\s*$/.test(raw.trim())) h='<u>'+h+'</u>';
     return '<div>'+h+'</div>';
