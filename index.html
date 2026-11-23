@@ -654,6 +654,22 @@ async function loadFoods(){
                   .sort((a, b) => b.length - a.length);
   render();
   ladeSterne(); // ⭐ (Rohkost/kaltgepresst) steht in der Ampel-Begründung → nur die IDs nachladen
+  ladeBlitze(); // ⚡-Block (Pestizide, Gentechnik …) steht in der Ampel-Begründung → nur die IDs nachladen
+}
+// ⚡ neben der Ampel (Ricarda 23.11.2026, über Sibylle): ein grüner Eintrag mit ⚡-Block soll in der
+// Übersicht erkennbar bleiben. Der ⚡-Block ändert die Farbe nie, er ist nur ein Hinweis.
+const BLITZ_TITEL = "⚡-Hinweis in der Ampel-Begründung (z. B. Pestizide, Gentechnik) — ändert die Farbe nicht";
+const hatBlitz = f => !!(f.blitz || (f.ampel_reason && f.ampel_reason.includes("⚡")));
+async function ladeBlitze(){
+  const SIZE = 1000, ids = new Set();
+  for(let from = 0; ; from += SIZE){
+    const {data,error} = await sb.from("foods").select("id").ilike("ampel_reason","%⚡%").order("id").range(from, from+SIZE-1);
+    if(error || !data) return;
+    data.forEach(r => ids.add(r.id));
+    if(data.length < SIZE) break;
+  }
+  FOODS.forEach(f => { f.blitz = ids.has(f.id); });
+  render();
 }
 async function ladeSterne(){
   const SIZE = 1000, ids = new Set();
@@ -830,7 +846,7 @@ function render(){
     const hk = hayKonform(f.hay_groups);
     tr.innerHTML = `
       <td class="cbcol"><input type="checkbox" class="rowcb" ${selected.has(f.id)?"checked":""}></td>
-      <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}${(f.stern||(f.ampel_reason&&f.ampel_reason.includes('⭐')))?'<span class="star" title="Rohkost/kaltgepresst — besonders schonend verarbeitet">⭐</span>':''}${((f.nachhaltigkeit)||[]).includes('bio')?BIO_SIEGEL:''}</td>
+      <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}${(f.stern||(f.ampel_reason&&f.ampel_reason.includes('⭐')))?'<span class="star" title="Rohkost/kaltgepresst — besonders schonend verarbeitet">⭐</span>':''}${hatBlitz(f)?`<span class="star" title="${BLITZ_TITEL}">⚡</span>`:''}${((f.nachhaltigkeit)||[]).includes('bio')?BIO_SIEGEL:''}</td>
       <td class="namecell">${nameHtml(f)}${auchBekanntAls(f)}${(window.LE_ZUBEREITUNG||{})[f.id]?`<div class="muted" style="font-size:12px">Zubereitung: ${esc(window.LE_ZUBEREITUNG[f.id])}</div>`:''}${VIEW==="werkbank"&&WERKBANK[f.id]?`<div class="muted" style="font-size:12px">fehlt: ${esc(WERKBANK[f.id])}</div>`:''}${durchsicht==="pruefung"&&PRUEFUNG_OFFEN[f.id]?`<div class="muted" style="font-size:12px">geprüft: ${esc(PRUEFUNG_OFFEN[f.id])}</div>`:''}${durchsicht.startsWith("go:")&&GO_PAKET[f.id]?`<div class="muted" style="font-size:12px">${esc((FLIESSBAND_GO[GO_PAKET[f.id]]||{}).stand||'')}</div>`:''}${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
       <td>${f.brand?esc(f.brand):'<span class="muted">—</span>'}</td>
       <td>${priceCell(f)}</td>
@@ -1565,7 +1581,7 @@ function profileCard(f){
       ${cell("Status", esc(statusLabel))}
       ${cell("Quelle", esc(srcLabel))}
       ${cell("Geprüft", f.reviewed_by_ricarda?'<span class="reviewed">✓ bestätigt</span>':'<span class="open">offen</span>')}
-      ${cell("Ampel", esc(ampelLabel))}
+      ${cell("Ampel", esc(ampelLabel) + (hatBlitz(f) ? ` <span title="${BLITZ_TITEL}">· ⚡ mit Hinweis</span>` : ""))}
       ${cell("Hay-Konformität", hk?(hk.sym+" "+esc(hk.t)):"—")}
     </dl>
   </div>`;
