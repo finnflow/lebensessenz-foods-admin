@@ -1625,7 +1625,7 @@ function variantenBox(f){
   const oberVon = id => FOODS.find(x => (x.varianten||[]).includes(id));
   const markenVon = id => FOODS.filter(x => x.variante_id === id && x.status !== "archived");
   const mz = n => n ? `${n} Markenprodukt${n===1?"":"e"}` : "";
-  const markenListe = (ms, titel) => ms.length ? `<details><summary class="vt-hint" style="cursor:pointer">${titel} (${ms.length})</summary>
+  const markenListe = (ms, titel, offen) => ms.length ? `<details${offen?" open":""}><summary class="vt-hint" style="cursor:pointer">${titel} (${ms.length})</summary>
       <ul>${ms.slice().sort((a,b)=>a.name.localeCompare(b.name,"de")).map(m => `<li>${dot(m)}${link(m)}</li>`).join("")}</ul></details>` : "";
   if((f.varianten||[]).length){
     const vs = f.varianten.map(byId).filter(Boolean);
@@ -1640,8 +1640,10 @@ function variantenBox(f){
   if(ober){
     const andere = ober.varianten.filter(id => id !== f.id).map(byId).filter(Boolean);
 
-    return `<div class="varianten"><div><span class="vt-label">Gehört zu:</span> <b>${link(ober)}</b>${andere.length ? ` · <span class="vt-label">weitere Varianten:</span> ${andere.map(v => dot(v)+" "+link(v)).join(", ")}` : ""}</div>
-      ${markenListe(markenVon(f.id), "Markenprodukte dieser Variante")}</div>`;
+    const durchschnitt = !(f.brand||"").trim()
+      ? `<div class="vt-hint">Durchschnittsrezeptur — die Markenprodukte darunter sind genauer (eigene Zutaten, Nährwerte und Ampel).</div>` : "";
+    return `<div class="varianten">${durchschnitt}<div><span class="vt-label">Gehört zu:</span> <b>${link(ober)}</b>${andere.length ? ` · <span class="vt-label">weitere Varianten:</span> ${andere.map(v => dot(v)+" "+link(v)).join(", ")}` : ""}</div>
+      ${markenListe(markenVon(f.id), "Markenprodukte dieser Variante", true)}</div>`;
   }
   if(f.variante_id){
     const v = byId(f.variante_id); if(!v) return "";
