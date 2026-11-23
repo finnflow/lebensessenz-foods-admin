@@ -846,7 +846,7 @@ function render(){
     const hk = hayKonform(f.hay_groups);
     tr.innerHTML = `
       <td class="cbcol"><input type="checkbox" class="rowcb" ${selected.has(f.id)?"checked":""}></td>
-      <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}${(f.stern||(f.ampel_reason&&f.ampel_reason.includes('⭐')))?'<span class="star" title="Rohkost/kaltgepresst — besonders schonend verarbeitet">⭐</span>':''}${hatBlitz(f)?`<span class="star" title="${BLITZ_TITEL}">⚡</span>`:''}${((f.nachhaltigkeit)||[]).includes('bio')?BIO_SIEGEL:''}</td>
+      <td class="editable" data-field="ampel">${(f.varianten||[]).length ? oberbegriffPunkte(f) : f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}${(f.stern||(f.ampel_reason&&f.ampel_reason.includes('⭐')))?'<span class="star" title="Rohkost/kaltgepresst — besonders schonend verarbeitet">⭐</span>':''}${hatBlitz(f)?`<span class="star" title="${BLITZ_TITEL}">⚡</span>`:''}${((f.nachhaltigkeit)||[]).includes('bio')?BIO_SIEGEL:''}</td>
       <td class="namecell">${nameHtml(f)}${auchBekanntAls(f)}${(window.LE_ZUBEREITUNG||{})[f.id]?`<div class="muted" style="font-size:12px">Zubereitung: ${esc(window.LE_ZUBEREITUNG[f.id])}</div>`:''}${VIEW==="werkbank"&&WERKBANK[f.id]?`<div class="muted" style="font-size:12px">fehlt: ${esc(WERKBANK[f.id])}</div>`:''}${durchsicht==="pruefung"&&PRUEFUNG_OFFEN[f.id]?`<div class="muted" style="font-size:12px">geprüft: ${esc(PRUEFUNG_OFFEN[f.id])}</div>`:''}${durchsicht.startsWith("go:")&&GO_PAKET[f.id]?`<div class="muted" style="font-size:12px">${esc((FLIESSBAND_GO[GO_PAKET[f.id]]||{}).stand||'')}</div>`:''}${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
       <td>${f.brand?esc(f.brand):'<span class="muted">—</span>'}</td>
       <td>${priceCell(f)}</td>
@@ -1581,7 +1581,7 @@ function profileCard(f){
       ${cell("Status", esc(statusLabel))}
       ${cell("Quelle", esc(srcLabel))}
       ${cell("Geprüft", f.reviewed_by_ricarda?'<span class="reviewed">✓ bestätigt</span>':'<span class="open">offen</span>')}
-      ${cell("Ampel", esc(ampelLabel) + (hatBlitz(f) ? ` <span title="${BLITZ_TITEL}">· ⚡ mit Hinweis</span>` : ""))}
+      ${cell("Ampel", (f.varianten||[]).length ? oberbegriffPunkte(f) + ' <span style="color:var(--muted)">Oberbegriff · Farben der Varianten</span>' : esc(ampelLabel) + (hatBlitz(f) ? ` <span title="${BLITZ_TITEL}">· ⚡ mit Hinweis</span>` : ""))}
       ${cell("Hay-Konformität", hk?(hk.sym+" "+esc(hk.t)):"—")}
     </dl>
   </div>`;
@@ -1613,6 +1613,11 @@ function markenBox(f){
 // Felder: varianten (am Oberbegriff, Liste der Varianten-ids) und variante_id (am Markenprodukt).
 // Der Rückweg Variante → Oberbegriff wird aus der Liste des Oberbegriffs abgelesen, kein eigenes Feld.
 const AMPEL_REIHE = ["GRUEN","GELB","ROT","GRAU"];
+// Oberbegriff (Ricarda 23.11.): zeigt jede Farbe seiner Varianten genau einmal (grün, gelb, rot), statt eines eigenen Grau-Punkts.
+function oberbegriffPunkte(f){
+  const farben = AMPEL_REIHE.filter(a => (f.varianten||[]).some(id => (FOODS.find(x => x.id === id)||{}).ampel === a));
+  return `<span title="Oberbegriff — Farben seiner Varianten">${farben.map(a=>`<span class="dot ${a}"></span>`).join(" ") || '<span class="dot GRAU"></span>'}</span>`;
+}
 function variantenBox(f){
   const byId = id => FOODS.find(x => x.id === id);
   const link = x => `<a data-open="${esc(x.id)}">${esc(x.name)}</a>`;
