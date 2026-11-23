@@ -194,6 +194,15 @@
   .marken ul{list-style:none;margin:6px 0 0;padding:0;max-height:260px;overflow:auto}
   .marken li{display:flex;align-items:center;gap:8px;padding:4px 0;border-top:1px solid var(--line);font-size:13px}
   .marken li a{cursor:pointer;color:inherit;text-decoration:underline;text-decoration-color:var(--line)}
+  .varianten{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:20px;font-size:13px;line-height:1.6}
+  .varianten .vt-kopf{font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .varianten .vt-hint{font-size:12px;color:var(--muted);margin:4px 0 6px}
+  .varianten ul{list-style:none;margin:6px 0 0;padding:0}
+  .varianten li{display:flex;align-items:center;gap:8px;padding:4px 0;border-top:1px solid var(--line)}
+  .varianten a{cursor:pointer;color:inherit;text-decoration:underline;text-decoration-color:var(--line)}
+  .varianten .vt-n{margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap}
+  .varianten .vt-label{color:var(--muted)}
+  .varianten ul ul,.varianten details ul{max-height:260px;overflow:auto}
   .marken .mz-st{margin-left:auto;font-size:11px;color:var(--muted);white-space:nowrap}
   .profile{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:20px;background:#fbf8f3}
   .profile .pv{display:flex;align-items:center;gap:10px;margin-bottom:13px;flex-wrap:wrap}
@@ -401,11 +410,11 @@ const FIELD_META = {
   allergens:   {label:"Allergene",            opts:ALLERGENS,  multi:true,  color:ALLERGEN_COLOR},
   intolerances:{label:"Unverträglichkeiten",  opts:INTOL,      multi:true,  color:INTOL_COLOR},
 };
-const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,ampel_reason,health_note,ganzheitlich_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition,image_url,nachhaltigkeit,brand,stores,price,synonyms";
+const EDIT_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,ampel_reason,health_note,ganzheitlich_note,public_note,trennkost_note,allergens,intolerances,ingredients,nutrition,image_url,nachhaltigkeit,brand,stores,price,synonyms,varianten,variante_id";
 // Schlanke Spalten für die Liste (Ricarda 03.10.2026: „lädt ultra lange“). Die langen Texte
 // (Ampel-Begründung, Gesundheit, Ganzheitlich, Trennkost, Nährwerte) kommen erst beim Öffnen
 // eines Lebensmittels — nur für dieses eine (siehe openDrawer). Spart rund zwei Drittel der Daten.
-const LIST_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,public_note,allergens,intolerances,ingredients,image_url,nachhaltigkeit,brand,stores,price,synonyms";
+const LIST_COLS = "id,item_id,name,status,reviewed_by_ricarda,source,category,vegan,hay_groups,ampel,public_note,allergens,intolerances,ingredients,image_url,nachhaltigkeit,brand,stores,price,synonyms,varianten,variante_id";
 
 const STORES = ["Edeka","Rewe","Kaufland","Aldi","Lidl","Penny","Netto","dm","Rossmann","Müller","Budni","Bioladen","Alnatura","Denn's","Reformhaus","Online-Shop"];
 // Preis RELATIV zur Kategorie: günstig/teuer wird an ähnlichen Produkten gemessen
@@ -1580,6 +1589,44 @@ function markenBox(f){
   }
   return "";
 }
+// ── Oberbegriff → Varianten → Marken (Ricarda 23.11.2026) ──
+// Felder: varianten (am Oberbegriff, Liste der Varianten-ids) und variante_id (am Markenprodukt).
+// Der Rückweg Variante → Oberbegriff wird aus der Liste des Oberbegriffs abgelesen, kein eigenes Feld.
+const AMPEL_REIHE = ["GRUEN","GELB","ROT","GRAU"];
+function variantenBox(f){
+  const byId = id => FOODS.find(x => x.id === id);
+  const link = x => `<a data-open="${esc(x.id)}">${esc(x.name)}</a>`;
+  const dot = x => `<span class="dot ${x.ampel||'none'}"></span>`;
+  const oberVon = id => FOODS.find(x => (x.varianten||[]).includes(id));
+  const markenVon = id => FOODS.filter(x => x.variante_id === id && x.status !== "archived");
+  const mz = n => n ? `${n} Markenprodukt${n===1?"":"e"}` : "";
+  const markenListe = (ms, titel) => ms.length ? `<details><summary class="vt-hint" style="cursor:pointer">${titel} (${ms.length})</summary>
+      <ul>${ms.slice().sort((a,b)=>a.name.localeCompare(b.name,"de")).map(m => `<li>${dot(m)}${link(m)}</li>`).join("")}</ul></details>` : "";
+  if((f.varianten||[]).length){
+    const vs = f.varianten.map(byId).filter(Boolean);
+    const farben = AMPEL_REIHE.filter(a => vs.some(v => v.ampel === a));
+    const offen = markenVon(f.id).length;
+    return `<div class="varianten"><div class="vt-kopf">🧩 Varianten des Produkts ${farben.map(a=>`<span class="dot ${a}"></span>`).join("")}</div>
+      <div class="vt-hint">Oberbegriff: Ampel, Texte und Zutaten stehen bei den Varianten.</div>
+      <ul>${vs.map(v => `<li>${dot(v)}${link(v)}<span class="vt-n">${mz(markenVon(v.id).length)}</span></li>`).join("")}</ul>
+      ${markenListe(markenVon(f.id), "Markenprodukte noch ohne Variante (keine Zutaten oder unklar)")}</div>`;
+  }
+  const ober = oberVon(f.id);
+  if(ober){
+    const andere = ober.varianten.filter(id => id !== f.id).map(byId).filter(Boolean);
+
+    return `<div class="varianten"><div><span class="vt-label">Gehört zu:</span> <b>${link(ober)}</b>${andere.length ? ` · <span class="vt-label">weitere Varianten:</span> ${andere.map(v => dot(v)+" "+link(v)).join(", ")}` : ""}</div>
+      ${markenListe(markenVon(f.id), "Markenprodukte dieser Variante")}</div>`;
+  }
+  if(f.variante_id){
+    const v = byId(f.variante_id); if(!v) return "";
+    if((v.varianten||[]).length)
+      return `<div class="varianten"><span class="vt-label">Gehört zu:</span> <b>${link(v)}</b> <span class="vt-label">(Variante noch offen: keine Zutaten oder unklar)</span></div>`;
+    const o = oberVon(v.id);
+    return `<div class="varianten"><span class="vt-label">Variante:</span> ${dot(v)} <b>${link(v)}</b>${o ? ` · <span class="vt-label">gehört zu:</span> ${link(o)}` : ""}</div>`;
+  }
+  return "";
+}
 // Beim Öffnen die vollständige Zeile (mit den langen Texten) für genau dieses Lebensmittel holen.
 async function openDrawer(food){
   if(food && !food.__voll){
@@ -1597,6 +1644,7 @@ function drawerZeigen(food){
   $("#drawerTitle").textContent = food ? food.name : "Neues Lebensmittel";
   $("#saveMsg").textContent=""; const f=current; drawerImageUrl = f.image_url || null;
   $("#drawerBody").innerHTML=`
+    ${food?variantenBox(f):""}
     ${food?auchBekanntAls(f):""}
     ${food?profileCard(f):""}
     ${food?markenBox(f):""}
