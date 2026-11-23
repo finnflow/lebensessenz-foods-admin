@@ -347,6 +347,7 @@
 <script src="./markenzuordnung.js"></script>
 <script src="./pruefung_offen.js"></script>
 <script src="./werkbank.js"></script>
+<script src="./fliessband_go.js"></script>
 <script src="./zubereitung.js"></script>
 <script>
 const sb = supabase.createClient(window.LE_CONFIG.url, window.LE_CONFIG.key);
@@ -717,6 +718,16 @@ function nameSortRest(f){
 // (ansichten/pruefung_offen.json → pruefung_offen.js). Ohne Trennkost-Gruppe warten sie auf
 // Sarah und erscheinen hier noch nicht. Mit dem Haken fällt ein Eintrag von selbst heraus.
 const PRUEFUNG_OFFEN = window.LE_PRUEFUNG_OFFEN || {};
+// Fließband „Go Paket n“ (Ricarda 23.11.2026: „selber in der Datenbank kontrollieren … filtern“): je Paket die eingespielten,
+// von Sibylle nachkontrollierten Einträge (ansichten/fliessband_go.json → fliessband_go.js). Nur Filter, ändert nichts.
+const FLIESSBAND_GO = window.LE_FLIESSBAND_GO || {};
+const GO_PAKET = {}; Object.entries(FLIESSBAND_GO).forEach(([p,e])=>(e.ids||[]).forEach(id=>{ GO_PAKET[id]=p; }));
+(function goOptionen(){
+  const sel=document.getElementById("fDurchsicht"); if(!sel) return;
+  Object.entries(FLIESSBAND_GO).forEach(([p,e])=>{
+    const o=document.createElement("option"); o.value="go:"+p; o.textContent=`${e.titel||p} – bereit für dein Go`; sel.appendChild(o);
+  });
+})();
 function pruefungBereit(f){
   return Object.prototype.hasOwnProperty.call(PRUEFUNG_OFFEN, f.id) && f.status==="draft" && !f.reviewed_by_ricarda
     && (f.hay_groups||[]).some(g => g && g!=="unklar");
@@ -736,12 +747,14 @@ function render(){
       if(!ok) return false;
     }
     // Papierkorb-Filter zeigt den ganzen Papierkorb, egal welche Ansicht oben gewählt ist (Ricarda 21.11.2026).
-    if(st!=="archived" && !inView(f, VIEW)) return false;
+    // Papierkorb-Filter und Paket-Go-Filter zeigen alles, egal welche Ansicht oben gewählt ist (Ricarda 21./23.11.2026).
+    if(st!=="archived" && !durchsicht.startsWith("go:") && !inView(f, VIEW)) return false;
     if(st && f.status!==st) return false;
     if(unrev && f.reviewed_by_ricarda) return false;
     // ★ Durchsicht-Listen (Ricarda 2026-08-05): dieselben Erkennungen wie im Generator,
     // damit ein Eintrag automatisch aus der Liste faellt, sobald er in Ordnung ist.
     if(durchsicht==="pruefung" && !pruefungBereit(f)) return false;
+    if(durchsicht.startsWith("go:")){ if(GO_PAKET[f.id]!==durchsicht.slice(3)) return false; }
     if(durchsicht){
       const ing=(f.ingredients||"").trim();
       if(durchsicht==="sammel"){
@@ -788,6 +801,11 @@ function render(){
   visibleRows = list;
   const poOpt = document.querySelector('#fDurchsicht option[value="pruefung"]');
   if(poOpt) poOpt.textContent = `Prüfung offen – bereit für den Haken (${FOODS.filter(pruefungBereit).length})`;
+  Object.entries(FLIESSBAND_GO).forEach(([p,e])=>{
+    const o=document.querySelector(`#fDurchsicht option[value="go:${p}"]`); if(!o) return;
+    const im=FOODS.filter(f=>GO_PAKET[f.id]===p), ok=im.filter(f=>f.reviewed_by_ricarda).length;
+    o.textContent=`${e.titel||p} – bereit für dein Go (${im.length-ok} offen von ${im.length})`;
+  });
   const _basis = VIEW ? viewCounts(VIEW).total : FOODS.length;
   if(st==="archived"){
     const heute=new Date().toISOString().slice(0,10), neu=list.filter(f=>pkDatum(f)===heute).length;
@@ -804,7 +822,7 @@ function render(){
     tr.innerHTML = `
       <td class="cbcol"><input type="checkbox" class="rowcb" ${selected.has(f.id)?"checked":""}></td>
       <td class="editable" data-field="ampel">${f.ampel?`<span class="dot ${f.ampel}"></span>`:'<span class="dot none" title="keine Ampel"></span>'}${(f.stern||(f.ampel_reason&&f.ampel_reason.includes('⭐')))?'<span class="star" title="Rohkost/kaltgepresst — besonders schonend verarbeitet">⭐</span>':''}${((f.nachhaltigkeit)||[]).includes('bio')?BIO_SIEGEL:''}</td>
-      <td class="namecell">${nameHtml(f)}${auchBekanntAls(f)}${(window.LE_ZUBEREITUNG||{})[f.id]?`<div class="muted" style="font-size:12px">Zubereitung: ${esc(window.LE_ZUBEREITUNG[f.id])}</div>`:''}${VIEW==="werkbank"&&WERKBANK[f.id]?`<div class="muted" style="font-size:12px">fehlt: ${esc(WERKBANK[f.id])}</div>`:''}${durchsicht==="pruefung"&&PRUEFUNG_OFFEN[f.id]?`<div class="muted" style="font-size:12px">geprüft: ${esc(PRUEFUNG_OFFEN[f.id])}</div>`:''}${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
+      <td class="namecell">${nameHtml(f)}${auchBekanntAls(f)}${(window.LE_ZUBEREITUNG||{})[f.id]?`<div class="muted" style="font-size:12px">Zubereitung: ${esc(window.LE_ZUBEREITUNG[f.id])}</div>`:''}${VIEW==="werkbank"&&WERKBANK[f.id]?`<div class="muted" style="font-size:12px">fehlt: ${esc(WERKBANK[f.id])}</div>`:''}${durchsicht==="pruefung"&&PRUEFUNG_OFFEN[f.id]?`<div class="muted" style="font-size:12px">geprüft: ${esc(PRUEFUNG_OFFEN[f.id])}</div>`:''}${durchsicht.startsWith("go:")&&GO_PAKET[f.id]?`<div class="muted" style="font-size:12px">${esc((FLIESSBAND_GO[GO_PAKET[f.id]]||{}).stand||'')}</div>`:''}${f.image_url?`<img class="rowthumb" src="${esc(f.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:''}</td>
       <td>${f.brand?esc(f.brand):'<span class="muted">—</span>'}</td>
       <td>${priceCell(f)}</td>
       <td class="editable" data-field="category">${f.category?esc(f.category):'<span class="muted">—</span>'}</td>
